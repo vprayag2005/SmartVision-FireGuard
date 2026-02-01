@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Fire & Smoke — Login</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500..800&family=Inter:wght@400..800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/css/style.css" />
+</head>
+
+<body>
+  <div class="bg-scape"></div>
+
+  <main class="auth-shell" style="display:grid; place-items:center; min-height:100vh;">
+    <section class="panel glow-edge auth-card" style="width:min(500px, 90%); padding:32px;">
+      
+      <header style="margin-bottom:24px;">
+        <div class="kicker">Secure Access</div>
+        <div class="h1" style="font-family:'Orbitron';">SmartVision FireGuard</div>
+      </header>
+
+      <!-- IMPORTANT: data-page="login" -->
+      <form data-page="login" style="display:grid; gap:16px;">
+        <div>
+          <label class="kicker" style="display:block; margin-bottom:8px;">Email</label>
+          <input class="input" type="email" placeholder="name@lab.example" required />
+        </div>
+
+        <div>
+          <label class="kicker" style="display:block; margin-bottom:8px;">Password</label>
+          <input class="input" type="password" placeholder="••••••••" required />
+        </div>
+
+        <div>
+          <label class="kicker" style="display:block; margin-bottom:8px;">Role</label>
+          <select class="input" id="role" required>
+            <option value="User">User</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+
+        <button class="btn" type="submit" style="width:100%; justify-content:center; margin-top:8px;">
+          Sign In
+        </button>
+      </form>
+
+    </section>
+  </main>
+
+  <script src="static/js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | AI Fire Detection</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500..800&family=Inter:wght@400..800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/css/style.css" />
+</head>
+
+<body>
+  <div class="bg-scape"></div>
+
+  <div class="app-shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="h2" style="font-family:'Orbitron'; margin-bottom:24px;">
+        Admin
+
+      </div>
+
+      <nav style="display:grid; gap:10px;">
+        <a class="btn" href="admin.html" style="width:100%;">Sources</a>
+        <a class="btn" href="index.html" style="width:100%;">Logout</a>
+      </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+      <header style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px;">
+        <div>
+          <div class="kicker">Management</div>
+          <div class="h1" style="font-family:'Orbitron';">Source Registry</div>
+        </div>
+
+        <div style="display:flex; gap:12px;">
+         <button class="btn" type="button" onclick="openModal('cctvModal')">
+      Add CCTV
+    </button>
+    <button class="btn" type="button" onclick="openModal('videoModal')">
+      Add Video
+    </button>
+        </div>
+      </header>
+
+      <section class="panel" style="padding:16px;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Source Name</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td>Warehouse Cam 01</td>
+              <td>CCTV</td>
+              <td>North Wing</td>
+              <td style="color:var(--cyan);">● Active</td>
+            </tr>
+
+            <tr>
+              <td>Loading Dock 03</td>
+              <td>CCTV</td>
+              <td>Gate A</td>
+              <td style="color:var(--cyan);">● Active</td>
+            </tr>
+
+            <tr>
+              <td>R&D Corridor</td>
+              <td>CCTV</td>
+              <td>Level 2</td>
+              <td style="color:var(--red);">● Offline</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script src="static/js/script.js"></script>
+  <!-- ADD CCTV MODAL -->
+<div class="modal" id="cctvModal">
+  <div class="panel glow-edge modal-box">
+    <div class="modal-header">
+      <div class="h2" style="font-family:'Orbitron';">Add CCTV Source</div>
+      <button class="btn" onclick="closeModal('cctvModal')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input class="input" placeholder="Source Name" />
+      <input class="input" placeholder="Location" />
+      <input class="input" placeholder="RTSP URL" />
+      <label style="display:flex; gap:8px; align-items:center;">
+        <input type="checkbox" checked />
+        Enable AI Detection
+      </label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('cctvModal')">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD VIDEO MODAL -->
+<div class="modal" id="videoModal">
+  <div class="panel glow-edge modal-box">
+    <div class="modal-header">
+      <div class="h2" style="font-family:'Orbitron';">Add Video Source</div>
+      <button class="btn" onclick="closeModal('videoModal')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input class="input" placeholder="Video Name" />
+      <input class="input" placeholder="Location" />
+      <input type="file" class="input" />
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('videoModal')">Upload</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

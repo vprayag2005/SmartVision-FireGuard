@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Monitoring Console</title>
+    <style>
+      /* AI Monitoring Page Styles */
+
+      :root {
+        --bg: #070b14;
+        --bg-2: #090f1f;
+        --panel: rgba(10, 18, 36, 0.82);
+        --panel-2: rgba(10, 18, 36, 0.62);
+        --border: rgba(120, 170, 255, 0.12);
+        --border-2: rgba(120, 170, 255, 0.18);
+        --text: rgba(231, 241, 255, 0.92);
+        --muted: rgba(186, 205, 232, 0.72);
+        --muted-2: rgba(186, 205, 232, 0.55);
+        --cyan: #00e6ff;
+        --cyan-2: #4af2ff;
+        --green: #35ff8f;
+        --red: #ff3b3b;
+        --red-2: #ff6b6b;
+        --shadow: 0 18px 55px rgba(0, 0, 0, 0.55);
+        --shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.38);
+        --radius: 14px;
+        --radius-sm: 12px;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial,
+          "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background:
+          radial-gradient(900px 500px at 20% 10%, rgba(0, 230, 255, 0.10), transparent 60%),
+          radial-gradient(1000px 700px at 75% 20%, rgba(53, 255, 143, 0.06), transparent 62%),
+          radial-gradient(800px 600px at 60% 90%, rgba(110, 130, 255, 0.08), transparent 60%),
+          linear-gradient(180deg, var(--bg), var(--bg-2));
+        overflow-x: hidden;
+      }
+
+      .noise {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.055;
+        mix-blend-mode: overlay;
+        background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+      }
+
+      .shell {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 18px 36px;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background:
+          linear-gradient(180deg, rgba(12, 20, 40, 0.9), rgba(8, 12, 24, 0.65));
+        box-shadow: var(--shadow-soft);
+        backdrop-filter: blur(10px);
+      }
+
+      .title {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 260px;
+      }
+
+      .title h1 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 650;
+      }
+
+      .title .sub {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(53, 255, 143, 0.25);
+        background:
+          radial-gradient(180px 70px at 30% 30%, rgba(53, 255, 143, 0.12), transparent 70%),
+          linear-gradient(180deg, rgba(12, 22, 26, 0.65), rgba(6, 10, 14, 0.35));
+        box-shadow: 0 0 0 1px rgba(53, 255, 143, 0.05), 0 0 24px rgba(53, 255, 143, 0.12);
+      }
+
+      .status .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 0 0 rgba(53, 255, 143, 0.45);
+        animation: pulse 1.35s ease-out infinite;
+      }
+
+      .status .label {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        color: rgba(224, 255, 240, 0.90);
+      }
+
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(53, 255, 143, 0.40); transform: scale(1); }
+        70% { box-shadow: 0 0 0 10px rgba(53, 255, 143, 0); transform: scale(1.02); }
+        100% { box-shadow: 0 0 0 0 rgba(53, 255, 143, 0); transform: scale(1); }
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1.55fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+        align-items: start;
+      }
+
+      .panel {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow-soft);
+        overflow: hidden;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(120, 170, 255, 0.10);
+        background: linear-gradient(180deg, rgba(11, 18, 34, 0.92), rgba(10, 18, 36, 0.72));
+      }
+
+      .panel-title {
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        font-family: var(--mono);
+        color: rgba(205, 225, 255, 0.86);
+      }
+
+      .panel-meta {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: rgba(170, 196, 232, 0.70);
+      }
+
+      .camera-grid {
+        display: grid;
+        grid-template-columns: 1.35fr 0.65fr;
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .camera-stack {
+        display: grid;
+        grid-template-rows: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .camera {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: rgba(8, 14, 28, 0.55);
+        box-shadow: 0 0 0 1px rgba(0, 230, 255, 0.02);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .camera::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(600px 220px at 20% 0%, rgba(0, 230, 255, 0.08), transparent 65%);
+        opacity: 0.9;
+      }
+
+      .camera-header {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(120, 170, 255, 0.10);
+      }
+
+      .camera-name {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        color: rgba(220, 238, 255, 0.92);
+        text-transform: uppercase;
+      }
+
+      .badge {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 230, 255, 0.22);
+        color: rgba(173, 251, 255, 0.92);
+        background:
+          radial-gradient(140px 60px at 30% 40%, rgba(0, 230, 255, 0.12), transparent 70%),
+          rgba(0, 230, 255, 0.04);
+        box-shadow: 0 0 24px rgba(0, 230, 255, 0.10);
+      }
+
+      .badge.critical {
+        border-color: rgba(255, 59, 59, 0.35);
+        color: rgba(255, 210, 210, 0.95);
+        background:
+          radial-gradient(180px 80px at 30% 40%, rgba(255, 59, 59, 0.18), transparent 70%),
+          rgba(255, 59, 59, 0.06);
+        box-shadow: 0 0 36px rgba(255, 59, 59, 0.18);
+      }
+
+      .feed {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        background:
+          linear-gradient(180deg, rgba(3, 6, 14, 0.35), rgba(0, 0, 0, 0.62)),
+          radial-gradient(700px 280px at 40% 0%, rgba(0, 230, 255, 0.10), transparent 62%),
+          radial-gradient(650px 260px at 70% 100%, rgba(53, 255, 143, 0.06), transparent 60%),
+          #050914;
+        overflow: hidden;
+      }
+
+      .feed::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 24px 24px;
+        opacity: 0.25;
+        pointer-events: none;
+      }
+
+      .feed .overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(450px 180px at 20% 20%, rgba(0, 230, 255, 0.10), transparent 62%),
+          radial-gradient(500px 220px at 70% 70%, rgba(0, 230, 255, 0.06), transparent 65%);
+        opacity: 0.85;
+      }
+
+      .feed .label {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(214, 246, 255, 0.90);
+        background: rgba(0, 230, 255, 0.06);
+        border: 1px solid rgba(0, 230, 255, 0.20);
+        border-radius: 999px;
+        padding: 6px 10px;
+        backdrop-filter: blur(8px);
+      }
+
+      .feed .label .chip {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--cyan);
+        box-shadow: 0 0 14px rgba(0, 230, 255, 0.55);
+      }
+
+      .feed.alert {
+        background:
+          linear-gradient(180deg, rgba(30, 2, 6, 0.35), rgba(0, 0, 0, 0.72)),
+          radial-gradient(700px 280px at 40% 0%, rgba(255, 59, 59, 0.18), transparent 62%),
+          radial-gradient(650px 260px at 70% 100%, rgba(0, 230, 255, 0.05), transparent 62%),
+          #06070f;
+      }
+
+      .camera.alert {
+        border-color: rgba(255, 59, 59, 0.38);
+        box-shadow:
+          0 0 0 1px rgba(255, 59, 59, 0.15),
+          0 0 60px rgba(255, 59, 59, 0.12);
+      }
+
+      .camera.alert::before {
+        background:
+          radial-gradient(620px 240px at 20% 0%, rgba(255, 59, 59, 0.16), transparent 65%);
+      }
+
+      .feed.alert .label {
+        color: rgba(255, 232, 232, 0.92);
+        background: rgba(255, 59, 59, 0.07);
+        border-color: rgba(255, 59, 59, 0.26);
+      }
+
+      .feed.alert .label .chip {
+        background: var(--red);
+        box-shadow: 0 0 16px rgba(255, 59, 59, 0.55);
+        animation: pulseRed 1.2s ease-out infinite;
+      }
+
+      @keyframes pulseRed {
+        0% { transform: scale(1); opacity: 1; }
+        60% { transform: scale(1.18); opacity: 0.65; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      .metrics {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        padding: 10px 12px 12px;
+      }
+
+      .metric {
+        border: 1px solid rgba(120, 170, 255, 0.12);
+        border-radius: 12px;
+        padding: 10px 10px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+      }
+
+      .metric .k {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(186, 205, 232, 0.68);
+      }
+
+      .metric .v {
+        margin-top: 6px;
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 0.02em;
+        color: rgba(231, 241, 255, 0.95);
+      }
+
+      .metric .v .unit {
+        font-size: 11px;
+        color: rgba(186, 205, 232, 0.70);
+        margin-left: 6px;
+      }
+
+      .camera.alert .metric {
+        border-color: rgba(255, 59, 59, 0.18);
+        background:
+          linear-gradient(180deg, rgba(255, 59, 59, 0.05), rgba(255, 255, 255, 0.01));
+      }
+
+      .camera.alert .metric .v {
+        color: rgba(255, 232, 232, 0.95);
+      }
+
+      .log {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .log-body {
+        padding: 10px 12px 12px;
+        height: 560px;
+        overflow: auto;
+        scrollbar-color: rgba(0, 230, 255, 0.20) rgba(255, 255, 255, 0.03);
+        scrollbar-width: thin;
+        background:
+          radial-gradient(600px 220px at 30% 0%, rgba(0, 230, 255, 0.06), transparent 60%),
+          rgba(6, 10, 20, 0.40);
+      }
+
+      .log-body::-webkit-scrollbar { width: 10px; }
+      .log-body::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.03);
+        border-left: 1px solid rgba(120, 170, 255, 0.08);
+      }
+      .log-body::-webkit-scrollbar-thumb {
+        background: rgba(0, 230, 255, 0.18);
+        border: 1px solid rgba(0, 230, 255, 0.22);
+        border-radius: 999px;
+      }
+
+      .log-line {
+        display: grid;
+        grid-template-columns: 86px 1fr;
+        gap: 10px;
+        padding: 9px 10px;
+        border: 1px solid rgba(120, 170, 255, 0.08);
+        border-radius: 12px;
+        background: rgba(10, 18, 36, 0.45);
+        margin-bottom: 8px;
+      }
+
+      .log-line .ts {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        color: rgba(186, 205, 232, 0.55);
+      }
+
+      .log-line .msg {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: rgba(205, 225, 255, 0.78);
+        line-height: 1.35;
+      }
+
+      .log-line.alert {
+        border-color: rgba(255, 59, 59, 0.24);
+        background:
+          radial-gradient(380px 160px at 20% 0%, rgba(255, 59, 59, 0.12), transparent 62%),
+          rgba(16, 8, 14, 0.52);
+      }
+
+      .log-line.alert .ts { color: rgba(255, 180, 180, 0.72); }
+      .log-line.alert .msg { color: rgba(255, 214, 214, 0.92); }
+
+      .hint {
+        margin-top: 10px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: rgba(186, 205, 232, 0.55);
+        letter-spacing: 0.05em;
+      }
+
+      @media (max-width: 980px) {
+        .layout { grid-template-columns: 1fr; }
+        .log-body { height: 360px; }
+      }
+
+      @media (max-width: 760px) {
+        .camera-grid { grid-template-columns: 1fr; }
+        .camera-stack { grid-template-rows: auto; }
+        .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .title { min-width: 0; }
+        .header { flex-direction: column; align-items: flex-start; }
+      }
+      /* LOGOUT BUTTON – MONITORING STYLE */
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.logout-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  padding: 10px 18px;
+  border-radius: 999px;
+
+  color: rgba(255, 230, 230, 0.95);
+  text-decoration: none;
+
+  border: 1px solid rgba(255, 59, 59, 0.35);
+  background:
+    radial-gradient(160px 60px at 30% 40%, rgba(255, 59, 59, 0.18), transparent 70%),
+    rgba(255, 59, 59, 0.06);
+
+  box-shadow:
+    0 0 0 1px rgba(255, 59, 59, 0.15),
+    0 0 28px rgba(255, 59, 59, 0.22);
+
+  transition: all 0.18s ease;
+}
+
+/* HOVER */
+.logout-btn:hover {
+  border-color: rgba(255, 59, 59, 0.6);
+  box-shadow:
+    0 0 0 1px rgba(255, 59, 59, 0.35),
+    0 0 40px rgba(255, 59, 59, 0.45);
+  transform: translateY(-1px);
+}
+
+/* CLICK */
+.logout-btn:active {
+  transform: translateY(0);
+  box-shadow:
+    0 0 0 1px rgba(255, 59, 59, 0.25),
+    0 0 22px rgba(255, 59, 59, 0.30);
+}
+
+    </style>
+  </head>
+<body>
+<div class="bg-scape"></div>
+
+<div class="app-shell">
+
+
+    <main class="main" data-testid="page-monitoring">
+      <header class="header" data-testid="header-ai-system">
+        <div class="title">
+          <h1 data-testid="text-title">AI Monitoring Console</h1>
+          <div class="sub" data-testid="text-subtitle">AI Fire Detection System • USER Monitoring</div>
+        </div>
+
+        <div class="status" data-testid="status-model-running" aria-label="Model running">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="label">MODEL RUNNING</span>
+    
+        </div>
+      <div class="header-actions">
+  <a class="logout-btn" href="index.html">Logout</a>
+
+</div>
+
+        </header>
+
+
+      <section class="layout" aria-label="Monitoring layout">
+        <section class="panel" data-testid="panel-cameras" aria-label="Camera grid">
+          <div class="panel-header">
+            <div class="panel-title" data-testid="text-camera-grid-title">Camera Grid</div>
+            <div class="panel-meta" data-testid="text-camera-grid-meta">3 feeds • Live inference</div>
+          </div>
+
+          <div class="camera-grid">
+            <article class="camera alert" data-testid="card-camera-primary" aria-label="Primary camera alert">
+              <div class="camera-header">
+                <div class="camera-name" data-testid="text-camera-name-primary">CAM-01 • Boiler Room</div>
+                <div class="badge critical" data-testid="badge-critical-primary">CRITICAL</div>
+              </div>
+
+              <div class="feed alert" data-testid="feed-camera-primary" role="img" aria-label="Video feed placeholder: fire detected">
+                <div class="overlay" aria-hidden="true"></div>
+                <div class="label" data-testid="text-feed-label-primary">
+                  <span class="chip" aria-hidden="true"></span>
+                  FIRE DETECTED
+                </div>
+              </div>
+
+              <div class="metrics" aria-label="Inference metrics">
+                <div class="metric" data-testid="metric-fire-confidence-primary">
+                  <div class="k">Fire</div>
+                  <div class="v">92.4<span class="unit">%</span></div>
+                </div>
+                <div class="metric" data-testid="metric-smoke-confidence-primary">
+                  <div class="k">Smoke</div>
+                  <div class="v">71.8<span class="unit">%</span></div>
+                </div>
+                <div class="metric" data-testid="metric-latency-primary">
+                  <div class="k">Latency</div>
+                  <div class="v">18<span class="unit">ms</span></div>
+                </div>
+                <div class="metric" data-testid="metric-model-primary">
+                  <div class="k">Model</div>
+                  <div class="v">v9<span class="unit">edge</span></div>
+                </div>
+              </div>
+            </article>
+
+            <div class="camera-stack" aria-label="Secondary cameras">
+              <article class="camera" data-testid="card-camera-secondary-1" aria-label="Secondary camera normal">
+                <div class="camera-header">
+                  <div class="camera-name" data-testid="text-camera-name-secondary-1">CAM-02 • Corridor A</div>
+                  <div class="badge" data-testid="badge-normal-secondary-1">NORMAL</div>
+                </div>
+
+                <div class="feed" data-testid="feed-camera-secondary-1" role="img" aria-label="Video feed placeholder: normal">
+                  <div class="overlay" aria-hidden="true"></div>
+                  <div class="label" data-testid="text-feed-label-secondary-1">
+                    <span class="chip" aria-hidden="true"></span>
+                    INFERENCE ACTIVE
+                  </div>
+                </div>
+
+                <div class="metrics" aria-label="Inference metrics">
+                  <div class="metric" data-testid="metric-fire-confidence-secondary-1">
+                    <div class="k">Fire</div>
+                    <div class="v">1.6<span class="unit">%</span></div>
+                  </div>
+                  <div class="metric" data-testid="metric-smoke-confidence-secondary-1">
+                    <div class="k">Smoke</div>
+                    <div class="v">3.1<span class="unit">%</span></div>
+                  </div>
+                  <div class="metric" data-testid="metric-latency-secondary-1">
+                    <div class="k">Latency</div>
+                    <div class="v">14<span class="unit">ms</span></div>
+                  </div>
+                  <div class="metric" data-testid="metric-model-secondary-1">
+                    <div class="k">Model</div>
+                    <div class="v">v9<span class="unit"> edge</span></div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="camera" data-testid="card-camera-secondary-2" aria-label="Secondary camera normal">
+                <div class="camera-header">
+                  <div class="camera-name" data-testid="text-camera-name-secondary-2">CAM-03 • Loading Bay</div>
+                  <div class="badge" data-testid="badge-normal-secondary-2">NORMAL</div>
+                </div>
+
+                <div class="feed" data-testid="feed-camera-secondary-2" role="img" aria-label="Video feed placeholder: normal">
+                  <div class="overlay" aria-hidden="true"></div>
+                  <div class="label" data-testid="text-feed-label-secondary-2">
+                    <span class="chip" aria-hidden="true"></span>
+                    INFERENCE ACTIVE
+                  </div>
+                </div>
+
+                <div class="metrics" aria-label="Inference metrics">
+                  <div class="metric" data-testid="metric-fire-confidence-secondary-2">
+                    <div class="k">Fire</div>
+                    <div class="v">0.9<span class="unit">%</span></div>
+                  </div>
+                  <div class="metric" data-testid="metric-smoke-confidence-secondary-2">
+                    <div class="k">Smoke</div>
+                    <div class="v">2.4<span class="unit">%</span></div>
+                  </div>
+                  <div class="metric" data-testid="metric-latency-secondary-2">
+                    <div class="k">Latency</div>
+                    <div class="v">16<span class="unit">ms</span></div>
+                  </div>
+                  <div class="metric" data-testid="metric-model-secondary-2">
+                    <div class="k">Model</div>
+                    <div class="v">v9<span class="unit"> edge</span></div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel log" data-testid="panel-inference-log" aria-label="AI inference log">
+          <div class="panel-header">
+            <div class="panel-title" data-testid="text-log-title">AI Inference Log</div>
+            <div class="panel-meta" data-testid="text-log-meta">Rolling buffer • 128 events</div>
+          </div>
+
+          <div class="log-body" data-testid="log-body">
+            <div class="log-line" data-testid="log-line-0">
+              <div class="ts">08:05:12</div>
+              <div class="msg">CAM-02 inference ok • fire=1.6% smoke=3.1% • latency=14ms</div>
+            </div>
+            <div class="log-line" data-testid="log-line-1">
+              <div class="ts">08:05:11</div>
+              <div class="msg">CAM-03 inference ok • fire=0.9% smoke=2.4% • latency=16ms</div>
+            </div>
+            <div class="log-line alert" data-testid="log-line-2">
+              <div class="ts">08:05:10</div>
+              <div class="msg">ALERT • CAM-01 fire probability exceeded threshold (92.4%)</div>
+            </div>
+            <div class="log-line" data-testid="log-line-3">
+              <div class="ts">08:05:09</div>
+              <div class="msg">CAM-01 inference running • smoke rising trend detected</div>
+            </div>
+            <div class="log-line" data-testid="log-line-4">
+              <div class="ts">08:05:08</div>
+              <div class="msg">CAM-02 inference ok • no anomalies detected</div>
+            </div>
+            <div class="log-line" data-testid="log-line-5">
+              <div class="ts">08:05:07</div>
+              <div class="msg">Model warm state confirmed • GPU utilization stable</div>
+            </div>
+            <div class="log-line" data-testid="log-line-6">
+              <div class="ts">08:05:06</div>
+              <div class="msg">CAM-03 inference ok • fire=1.0% smoke=2.6% • latency=17ms</div>
+            </div>
+            <div class="log-line alert" data-testid="log-line-7">
+              <div class="ts">08:05:05</div>
+              <div class="msg">ALERT • CAM-01 smoke probability exceeded threshold (71.8%)</div>
+            </div>
+            <div class="log-line" data-testid="log-line-8">
+              <div class="ts">08:05:04</div>
+              <div class="msg">CAM-01 inference ok • fire=48.2% smoke=41.3% • latency=19ms</div>
+            </div>
+            <div class="log-line" data-testid="log-line-9">
+              <div class="ts">08:05:03</div>
+              <div class="msg">CAM-02 inference ok • fire=1.4% smoke=3.0% • latency=13ms</div>
+            </div>
+
+            <div class="hint" data-testid="text-log-hint">Scroll to view earlier events.</div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      // Minimal JS: keep log scrolled to top by default (no realtime streams)
+      (function () {
+        var log = document.querySelector('[data-testid="log-body"]');
+        if (!log) return;
+        log.scrollTop = 0;
+      })();
+    </script>
+  </body>
+</html>
