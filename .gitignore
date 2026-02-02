@@ -1,7 +1,7 @@
 venv/
 
-# Video files (keep directory structure but ignore video files)
-static/video/*.mp4
+# Video files (keep directory structure but allow demo video)
+# static/video/*.mp4 is removed to allow LFS tracking
 static/video/*.avi
 static/video/*.mov
 static/video/*.webm
