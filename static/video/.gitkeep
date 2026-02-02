@@ -1,0 +1,8 @@
+# Video files directory for SmartVision-FireGuard
+
+## Recommended naming convention:
+# - cctv_demo_detection.mp4
+# - cctv_sample_fire.mp4
+# - cctv_sample_smoke.mp4
+# - cctv_test_indoor.mp4
+# - cctv_test_outdoor.mp4

@@ -1,1 +1,9 @@
 venv/
+
+# Video files (keep directory structure but ignore video files)
+static/video/*.mp4
+static/video/*.avi
+static/video/*.mov
+static/video/*.webm
+static/video/*.mkv
+!static/video/.gitkeep
