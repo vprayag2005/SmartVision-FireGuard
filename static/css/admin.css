@@ -1,0 +1,38 @@
+/* Admin Dashboard Custom Styles */
+
+/* Background gradient for admin page */
+body {
+    background: radial-gradient(1100px 700px at 18% 10%, rgba(40, 247, 255, .13) 0%, rgba(40, 247, 255, 0) 55%),
+        radial-gradient(1000px 650px at 80% 22%, rgba(0, 200, 255, .12) 0%, rgba(0, 200, 255, 0) 60%),
+        radial-gradient(900px 620px at 45% 90%, rgba(255, 59, 59, .09) 0%, rgba(255, 59, 59, 0) 55%),
+        linear-gradient(180deg, #05070c, #070a12);
+}
+
+/* Glass panel effect */
+.glass-panel {
+    background: linear-gradient(180deg, rgba(18, 27, 44, .62), rgba(8, 12, 20, .56));
+    backdrop-filter: blur(14px);
+}
+
+/* Glow edge effect for modals */
+.glow-edge::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(120deg, rgba(40, 247, 255, .75), rgba(0, 200, 255, .05), rgba(255, 59, 59, .24));
+    opacity: .28;
+    filter: blur(10px);
+    z-index: -1;
+}
+
+/* Background grid pattern */
+.bg-grid::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background: repeating-linear-gradient(0deg, rgba(150, 220, 255, .06) 0 1px, transparent 1px 28px),
+        repeating-linear-gradient(90deg, rgba(150, 220, 255, .05) 0 1px, transparent 1px 34px);
+    mask-image: radial-gradient(900px 560px at 20% 10%, rgba(0, 0, 0, .9), rgba(0, 0, 0, 0));
+    opacity: .55;
+}

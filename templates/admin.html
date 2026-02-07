@@ -1,80 +1,105 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard | AI Fire Detection</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500..800&family=Inter:wght@400..800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500..800&family=Inter:wght@400..800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="static/css/admin.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'bg-0': '#05070c',
+            'bg-1': '#070a12',
+            'cyan': '#28f7ff',
+          },
+          fontFamily: {
+            orbitron: ['Orbitron', 'sans-serif'],
+            sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+            mono: ['ui-monospace', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
 </head>
 
-<body>
-  <div class="bg-scape"></div>
+<body class="min-h-screen text-white overflow-x-hidden">
+  <div class="bg-grid fixed inset-0 pointer-events-none -z-10"></div>
 
-  <div class="app-shell">
+  <div class="grid lg:grid-cols-[280px_1fr] grid-cols-1 min-h-screen">
     <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="h2" style="font-family:'Orbitron'; margin-bottom:24px;">
-        Admin
+    <aside class="p-[18px] border-r border-[rgba(160,210,255,0.10)] bg-[rgba(12,18,30,0.62)]">
+      <div class="font-orbitron text-xl font-semibold mb-6">Admin</div>
 
-      </div>
-
-      <nav style="display:grid; gap:10px;">
-        <a class="btn" href="admin.html" style="width:100%;">Sources</a>
-        <a class="btn" href="index.html" style="width:100%;">Logout</a>
+      <nav class="grid gap-2.5">
+        <a class="w-full px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all duration-150 hover:border-[rgba(40,247,255,0.45)] hover:-translate-y-px flex justify-center"
+          href="admin.html">Sources</a>
+        <a class="w-full px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all duration-150 hover:border-[rgba(40,247,255,0.45)] hover:-translate-y-px flex justify-center"
+          href="index.html">Logout</a>
       </nav>
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="main">
-      <header style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px;">
+    <main class="p-[22px]">
+      <header class="flex flex-wrap justify-between items-end gap-4 mb-6">
         <div>
-          <div class="kicker">Management</div>
-          <div class="h1" style="font-family:'Orbitron';">Source Registry</div>
+          <div class="font-mono text-xs uppercase tracking-[0.18em] text-[rgba(231,240,255,0.7)] mb-2">Management</div>
+          <div class="font-orbitron text-3xl font-bold">Source Registry</div>
         </div>
 
-        <div style="display:flex; gap:12px;">
-         <button class="btn" type="button" onclick="openModal('cctvModal')">
-      Add CCTV
-    </button>
-    <button class="btn" type="button" onclick="openModal('videoModal')">
-      Add Video
-    </button>
+        <div class="flex gap-3">
+          <button
+            class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all duration-150 hover:border-[rgba(40,247,255,0.45)] hover:-translate-y-px"
+            type="button" onclick="openModal('cctvModal')">
+            Add CCTV
+          </button>
+          <button
+            class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all duration-150 hover:border-[rgba(40,247,255,0.45)] hover:-translate-y-px"
+            type="button" onclick="openModal('videoModal')">
+            Add Video
+          </button>
         </div>
       </header>
 
-      <section class="panel" style="padding:16px;">
-        <table class="table">
+      <section
+        class="glass-panel border border-[rgba(160,210,255,0.14)] rounded-2xl shadow-[0_18px_60px_rgba(0,0,0,0.55)] p-4">
+        <table class="w-full border-collapse">
           <thead>
             <tr>
-              <th>Source Name</th>
-              <th>Type</th>
-              <th>Location</th>
-              <th>Status</th>
+              <th class="text-left p-3 font-mono text-xs border-b border-[rgba(160,210,255,0.12)]">Source Name</th>
+              <th class="text-left p-3 font-mono text-xs border-b border-[rgba(160,210,255,0.12)]">Type</th>
+              <th class="text-left p-3 font-mono text-xs border-b border-[rgba(160,210,255,0.12)]">Location</th>
+              <th class="text-left p-3 font-mono text-xs border-b border-[rgba(160,210,255,0.12)]">Status</th>
             </tr>
           </thead>
 
           <tbody>
             <tr>
-              <td>Warehouse Cam 01</td>
-              <td>CCTV</td>
-              <td>North Wing</td>
-              <td style="color:var(--cyan);">● Active</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">Warehouse Cam 01</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">CCTV</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">North Wing</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)] text-cyan">● Active</td>
             </tr>
 
             <tr>
-              <td>Loading Dock 03</td>
-              <td>CCTV</td>
-              <td>Gate A</td>
-              <td style="color:var(--cyan);">● Active</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">Loading Dock 03</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">CCTV</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">Gate A</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)] text-cyan">● Active</td>
             </tr>
 
             <tr>
-              <td>R&D Corridor</td>
-              <td>CCTV</td>
-              <td>Level 2</td>
-              <td style="color:var(--red);">● Offline</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">R&D Corridor</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">CCTV</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">Level 2</td>
+              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)] text-[#ff3b3b]">● Offline</td>
             </tr>
           </tbody>
         </table>
@@ -83,49 +108,72 @@
   </div>
 
   <script src="static/js/script.js"></script>
+
   <!-- ADD CCTV MODAL -->
-<div class="modal" id="cctvModal">
-  <div class="panel glow-edge modal-box">
-    <div class="modal-header">
-      <div class="h2" style="font-family:'Orbitron';">Add CCTV Source</div>
-      <button class="btn" onclick="closeModal('cctvModal')">✕</button>
-    </div>
+  <div class="fixed inset-0 bg-black/65 hidden items-center justify-center z-[1000]" id="cctvModal">
+    <div
+      class="glass-panel glow-edge relative w-[min(420px,90%)] p-5 border border-[rgba(160,210,255,0.14)] rounded-2xl shadow-[0_18px_60px_rgba(0,0,0,0.55)] grid gap-3.5">
+      <div class="flex justify-between items-center">
+        <div class="font-orbitron text-xl font-semibold">Add CCTV Source</div>
+        <button
+          class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all"
+          onclick="closeModal('cctvModal')">✕</button>
+      </div>
 
-    <div class="modal-body">
-      <input class="input" placeholder="Source Name" />
-      <input class="input" placeholder="Location" />
-      <input class="input" placeholder="RTSP URL" />
-      <label style="display:flex; gap:8px; align-items:center;">
-        <input type="checkbox" checked />
-        Enable AI Detection
-      </label>
-    </div>
+      <div class="grid gap-3">
+        <input
+          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none transition-all focus:border-[rgba(40,247,255,0.44)]"
+          placeholder="Source Name" />
+        <input
+          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none transition-all focus:border-[rgba(40,247,255,0.44)]"
+          placeholder="Location" />
+        <input
+          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none transition-all focus:border-[rgba(40,247,255,0.44)]"
+          placeholder="RTSP URL" />
+        <label class="flex gap-2 items-center">
+          <input type="checkbox" checked />
+          Enable AI Detection
+        </label>
+      </div>
 
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal('cctvModal')">Save</button>
+      <div class="flex justify-end gap-2.5">
+        <button
+          class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold"
+          onclick="closeModal('cctvModal')">Save</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ADD VIDEO MODAL -->
-<div class="modal" id="videoModal">
-  <div class="panel glow-edge modal-box">
-    <div class="modal-header">
-      <div class="h2" style="font-family:'Orbitron';">Add Video Source</div>
-      <button class="btn" onclick="closeModal('videoModal')">✕</button>
-    </div>
+  <!-- ADD VIDEO MODAL -->
+  <div class="fixed inset-0 bg-black/65 hidden items-center justify-center z-[1000]" id="videoModal">
+    <div
+      class="glass-panel glow-edge relative w-[min(420px,90%)] p-5 border border-[rgba(160,210,255,0.14)] rounded-2xl shadow-[0_18px_60px_rgba(0,0,0,0.55)] grid gap-3.5">
+      <div class="flex justify-between items-center">
+        <div class="font-orbitron text-xl font-semibold">Add Video Source</div>
+        <button
+          class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all"
+          onclick="closeModal('videoModal')">✕</button>
+      </div>
 
-    <div class="modal-body">
-      <input class="input" placeholder="Video Name" />
-      <input class="input" placeholder="Location" />
-      <input type="file" class="input" />
-    </div>
+      <div class="grid gap-3">
+        <input
+          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none transition-all focus:border-[rgba(40,247,255,0.44)]"
+          placeholder="Video Name" />
+        <input
+          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none transition-all focus:border-[rgba(40,247,255,0.44)]"
+          placeholder="Location" />
+        <input type="file"
+          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none" />
+      </div>
 
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal('videoModal')">Upload</button>
+      <div class="flex justify-end gap-2.5">
+        <button
+          class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold"
+          onclick="closeModal('videoModal')">Upload</button>
+      </div>
     </div>
   </div>
-</div>
 
 </body>
+
 </html>
