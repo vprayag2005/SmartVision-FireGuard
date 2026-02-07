@@ -1,5 +1,14 @@
 venv/
 
+# Old CSS files (replaced by Tailwind)
+static/css/style.css
+static/css/monitor.css
+static/css/input.css
+
+# Tailwind standalone files (not used - using CDN instead)
+tailwind.config.json
+tailwindcss.exe
+
 # Video files (keep directory structure but allow demo video)
 # static/video/*.mp4 is removed to allow LFS tracking
 static/video/*.avi

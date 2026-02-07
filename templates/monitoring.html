@@ -5,250 +5,426 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Monitoring Console</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/monitor.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/monitoring.css') }}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'bg': '#070b14',
+            'border': 'rgba(120, 170, 255, 0.12)',
+            'cyan': '#00e6ff',
+            'green': '#35ff8f',
+            'red': '#ff3b3b',
+          },
+          fontFamily: {
+            sans: ['ui-sans-serif', 'system-ui'],
+            mono: ['ui-monospace', 'monospace'],
+          },
+          animation: {
+            'pulse-dot': 'pulse-dot 1.35s ease-out infinite',
+            'pulse-red': 'pulse-red 1.2s ease-out infinite',
+          },
+          keyframes: {
+            'pulse-dot': {
+              '0%': { boxShadow: '0 0 0 0 rgba(53, 255, 143, 0.40)', transform: 'scale(1)' },
+              '70%': { boxShadow: '0 0 0 10px rgba(53, 255, 143, 0)', transform: 'scale(1.02)' },
+              '100%': { boxShadow: '0 0 0 0 rgba(53, 255, 143, 0)', transform: 'scale(1)' },
+            },
+            'pulse-red': {
+              '0%': { transform: 'scale(1)', opacity: '1' },
+              '60%': { transform: 'scale(1.18)', opacity: '0.65' },
+              '100%': { transform: 'scale(1)', opacity: '1' },
+            },
+          }
+        }
+      }
+    }
+  </script>
 </head>
 
-<body>
-  <div class="bg-scape"></div>
+<body class="min-h-screen text-[rgba(231,241,255,0.92)] overflow-x-hidden">
+  <div class="noise fixed inset-0 pointer-events-none opacity-[0.055] mix-blend-overlay"></div>
 
-  <div class="app-shell">
+  <main class="max-w-[1280px] mx-auto px-[18px] py-7 pb-9" data-testid="page-monitoring">
+    <header
+      class="flex flex-wrap items-center justify-between gap-4 p-4 border border-[rgba(120,170,255,0.12)] rounded-[14px] shadow-[0_10px_26px_rgba(0,0,0,0.38)] glass-panel"
+      data-testid="header-ai-system">
+      <div class="min-w-[260px]">
+        <h1 class="text-lg font-semibold uppercase tracking-[0.08em] mb-1.5" data-testid="text-title">AI Monitoring
+          Console</h1>
+        <div class="font-mono text-xs text-[rgba(186,205,232,0.72)] tracking-wider" data-testid="text-subtitle">AI Fire
+          Detection System • USER Monitoring</div>
+      </div>
 
+      <div
+        class="inline-flex items-center gap-2.5 px-3 py-2.5 rounded-full border border-[rgba(53,255,143,0.25)] bg-gradient-to-b from-[rgba(12,22,26,0.65)] to-[rgba(6,10,14,0.35)] shadow-[0_0_0_1px_rgba(53,255,143,0.05),0_0_24px_rgba(53,255,143,0.12)]"
+        data-testid="status-model-running" aria-label="Model running">
+        <span class="w-2.5 h-2.5 rounded-full bg-green shadow-[0_0_0_0_rgba(53,255,143,0.45)] animate-pulse-dot"
+          aria-hidden="true"></span>
+        <span class="font-mono text-xs tracking-[0.08em] text-[rgba(224,255,240,0.90)]">MODEL RUNNING</span>
+      </div>
 
-    <main class="main" data-testid="page-monitoring">
-      <header class="header" data-testid="header-ai-system">
-        <div class="title">
-          <h1 data-testid="text-title">AI Monitoring Console</h1>
-          <div class="sub" data-testid="text-subtitle">AI Fire Detection System • USER Monitoring</div>
+      <a class="font-mono text-xs tracking-[0.12em] uppercase px-[18px] py-2.5 rounded-full text-[rgba(255,230,230,0.95)] border border-[rgba(255,59,59,0.35)] bg-[radial-gradient(160px_60px_at_30%_40%,rgba(255,59,59,0.18),transparent_70%),rgba(255,59,59,0.06)] shadow-[0_0_0_1px_rgba(255,59,59,0.15),0_0_28px_rgba(255,59,59,0.22)] transition-all duration-[180ms] hover:border-[rgba(255,59,59,0.6)] hover:shadow-[0_0_0_1px_rgba(255,59,59,0.35),0_0_40px_rgba(255,59,59,0.45)] hover:-translate-y-px"
+        href="index.html">Logout</a>
+    </header>
+
+    <section class="grid lg:grid-cols-2 grid-cols-1 gap-4 mt-4 items-stretch h-[calc(100vh-8rem)]"
+      aria-label="Monitoring layout">
+      <section
+        class="glass-panel border border-[rgba(120,170,255,0.12)] rounded-[14px] shadow-[0_10px_26px_rgba(0,0,0,0.38)] overflow-hidden h-full flex flex-col"
+        data-testid="panel-cameras" aria-label="Camera grid">
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 px-3.5 py-3 border-b border-[rgba(120,170,255,0.10)] bg-gradient-to-b from-[rgba(11,18,34,0.92)] to-[rgba(10,18,36,0.72)]">
+          <div class="font-mono text-xs uppercase tracking-[0.14em] text-[rgba(205,225,255,0.86)]"
+            data-testid="text-camera-grid-title">Camera View</div>
+          <select id="cameraSelector"
+            class="font-mono text-xs tracking-[0.08em] px-3.5 py-2 rounded-lg border border-[rgba(0,230,255,0.25)] bg-[rgba(0,230,255,0.08)] text-[rgba(220,245,255,0.92)] cursor-pointer transition-all outline-none hover:border-[rgba(0,230,255,0.40)] hover:bg-[rgba(0,230,255,0.12)] hover:shadow-[0_0_20px_rgba(0,230,255,0.15)] focus:border-[rgba(0,230,255,0.50)] focus:shadow-[0_0_0_3px_rgba(0,230,255,0.10)]">
+            <option value="cam1">CAM-01 • Boiler Room</option>
+            <option value="cam2">CAM-02 • Corridor A</option>
+            <option value="cam3">CAM-03 • Loading Bay</option>
+          </select>
         </div>
 
-        <div class="status" data-testid="status-model-running" aria-label="Model running">
-          <span class="dot" aria-hidden="true"></span>
-          <span class="label">MODEL RUNNING</span>
+        <div class="p-4 h-full flex-1 flex flex-col min-h-0 overflow-hidden">
+          <!-- CAM 1 -->
+          <article
+            class="border border-[rgba(255,59,59,0.38)] rounded-xl bg-[rgba(8,14,28,0.55)] shadow-[0_0_0_1px_rgba(255,59,59,0.15),0_0_60px_rgba(255,59,59,0.12)] overflow-hidden relative w-full flex-1 min-h-0 flex flex-col"
+            data-camera="cam1" data-testid="card-camera-primary" aria-label="Primary camera alert">
+            <div
+              class="relative flex items-center justify-between gap-2.5 px-3 py-2.5 border-b border-[rgba(120,170,255,0.10)] flex-shrink-0">
+              <div class="font-mono text-xs tracking-[0.08em] text-[rgba(220,238,255,0.92)] uppercase"
+                data-testid="text-camera-name-primary">CAM-01 • Boiler Room</div>
+              <div
+                class="font-mono text-[11px] tracking-[0.10em] uppercase px-2.5 py-1.5 rounded-full border border-[rgba(255,59,59,0.35)] text-[rgba(255,210,210,0.95)] bg-[radial-gradient(180px_80px_at_30%_40%,rgba(255,59,59,0.18),transparent_70%),rgba(255,59,59,0.06)] shadow-[0_0_36px_rgba(255,59,59,0.18)]"
+                data-testid="badge-critical-primary">CRITICAL</div>
+            </div>
 
+            <div
+              class="relative w-full min-h-[43vh] flex-1 bg-gradient-to-b from-[rgba(30,2,6,0.35)] to-[rgba(0,0,0,0.72)] overflow-hidden"
+              data-testid="feed-camera-primary" role="img" aria-label="Video feed: fire detected">
+              <video autoplay loop muted playsinline
+                class="absolute top-0 left-0 w-full h-full object-contain z-0 opacity-85">
+                <source src="{{ url_for('static', filename='video/cctv_demo_detection.mp4') }}" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+              <div
+                class="absolute inset-0 bg-[radial-gradient(700px_280px_at_40%_0%,rgba(255,59,59,0.18),transparent_62%),radial-gradient(650px_260px_at_70%_100%,rgba(0,230,255,0.05),transparent_62%)] opacity-85 pointer-events-none z-[1]"
+                aria-hidden="true"></div>
+              <div
+                class="absolute left-2.5 top-2.5 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.12em] uppercase text-[rgba(255,232,232,0.92)] bg-[rgba(255,59,59,0.07)] border border-[rgba(255,59,59,0.26)] rounded-full px-2.5 py-1.5 backdrop-blur-sm z-[2] pointer-events-none"
+                data-testid="text-feed-label-primary">
+                <span class="w-2 h-2 rounded-full bg-red shadow-[0_0_16px_rgba(255,59,59,0.55)] animate-pulse-red"
+                  aria-hidden="true"></span>
+                FIRE DETECTED
+              </div>
+            </div>
+
+            <div class="relative grid grid-cols-4 gap-2 p-2 pb-2.5 flex-shrink-0 mt-auto"
+              aria-label="Inference metrics">
+              <div
+                class="border border-[rgba(255,59,59,0.18)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,59,59,0.05)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-fire-confidence-primary">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Fire</div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(255,232,232,0.95)]">92.4<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span></div>
+              </div>
+              <div
+                class="border border-[rgba(255,59,59,0.18)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,59,59,0.05)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-smoke-confidence-primary">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Smoke</div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(255,232,232,0.95)]">71.8<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span></div>
+              </div>
+              <div
+                class="border border-[rgba(255,59,59,0.18)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,59,59,0.05)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-latency-primary">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Latency
+                </div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(255,232,232,0.95)]">18<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">ms</span></div>
+              </div>
+              <div
+                class="border border-[rgba(255,59,59,0.18)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,59,59,0.05)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-model-primary">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Model</div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(255,232,232,0.95)]">v9<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1"> edge</span></div>
+              </div>
+            </div>
+          </article>
+
+          <!-- CAM 2 -->
+          <article
+            class="hidden border border-[rgba(120,170,255,0.12)] rounded-xl bg-[rgba(8,14,28,0.55)] shadow-[0_0_0_1px_rgba(0,230,255,0.02)] overflow-hidden relative w-full flex-1 min-h-0 flex flex-col"
+            data-camera="cam2" data-testid="card-camera-secondary-1" aria-label="Secondary camera normal">
+            <div
+              class="relative flex items-center justify-between gap-2.5 px-3 py-2.5 border-b border-[rgba(120,170,255,0.10)] flex-shrink-0">
+              <div class="font-mono text-xs tracking-[0.08em] text-[rgba(220,238,255,0.92)] uppercase"
+                data-testid="text-camera-name-secondary-1">CAM-02 • Corridor A</div>
+              <div
+                class="font-mono text-[11px] tracking-[0.10em] uppercase px-2.5 py-1.5 rounded-full border border-[rgba(0,230,255,0.22)] text-[rgba(173,251,255,0.92)] bg-[radial-gradient(140px_60px_at_30%_40%,rgba(0,230,255,0.12),transparent_70%),rgba(0,230,255,0.04)] shadow-[0_0_24px_rgba(0,230,255,0.10)]"
+                data-testid="badge-normal-secondary-1">NORMAL</div>
+            </div>
+
+            <div
+              class="relative w-full min-h-[43vh] flex-1 bg-gradient-to-b from-[rgba(3,6,14,0.35)] to-[rgba(0,0,0,0.62)] overflow-hidden"
+              data-testid="feed-camera-secondary-1" role="img" aria-label="Video feed: normal">
+              <video autoplay loop muted playsinline
+                class="absolute top-0 left-0 w-full h-full object-contain z-0 opacity-85">
+                <source src="{{ url_for('static', filename='video/cctv_demo_detection.mp4') }}" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+              <div
+                class="absolute inset-0 bg-[radial-gradient(450px_180px_at_20%_20%,rgba(0,230,255,0.10),transparent_62%),radial-gradient(500px_220px_at_70%_70%,rgba(0,230,255,0.06),transparent_65%)] opacity-85 pointer-events-none z-[1]"
+                aria-hidden="true"></div>
+              <div
+                class="absolute left-2.5 top-2.5 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.12em] uppercase text-[rgba(214,246,255,0.90)] bg-[rgba(0,230,255,0.06)] border border-[rgba(0,230,255,0.20)] rounded-full px-2.5 py-1.5 backdrop-blur-sm z-[2] pointer-events-none"
+                data-testid="text-feed-label-secondary-1">
+                <span class="w-2 h-2 rounded-full bg-cyan shadow-[0_0_14px_rgba(0,230, 255,0.55)]"
+                  aria-hidden="true"></span>
+                INFERENCE ACTIVE
+              </div>
+            </div>
+
+            <div class="relative grid grid-cols-4 gap-2 p-2 pb-2.5 flex-shrink-0 mt-auto"
+              aria-label="Inference metrics">
+              <div
+                class="border border-[rgba(120,170,255,0.12)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-fire-confidence-secondary-1">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Fire</div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">1.6<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span></div>
+              </div>
+              <div
+                class="border border-[rgba(120,170,255,0.12)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-smoke-confidence-secondary-1">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Smoke</div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">3.1<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span></div>
+              </div>
+              <div
+                class="border border-[rgba(120,170,255,0.12)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-latency-secondary-1">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Latency
+                </div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">14<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">ms</span></div>
+              </div>
+              <div
+                class="border border-[rgba(120,170,255,0.12)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-model-secondary-1">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Model</div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">v9<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1"> edge</span></div>
+              </div>
+            </div>
+          </article>
+
+          <!-- CAM 3 -->
+          <article
+            class="hidden border border-[rgba(120,170,255,0.12)] rounded-xl bg-[rgba(8,14,28,0.55)] shadow-[0_0_0_1px_rgba(0,230,255,0.02)] overflow-hidden relative w-full flex-1 min-h-0 flex flex-col"
+            data-camera="cam3" data-testid="card-camera-secondary-2" aria-label="Secondary camera normal">
+            <div
+              class="relative flex items-center justify-between gap-2.5 px-3 py-2.5 border-b border-[rgba(120,170,255,0.10)] flex-shrink-0">
+              <div class="font-mono text-xs tracking-[0.08em] text-[rgba(220,238,255,0.92)] uppercase"
+                data-testid="text-camera-name-secondary-2">CAM-03 • Loading Bay</div>
+              <div
+                class="font-mono text-[11px] tracking-[0.10em] uppercase px-2.5 py-1.5 rounded-full border border-[rgba(0,230,255,0.22)] text-[rgba(173,251,255,0.92)] bg-[radial-gradient(140px_60px_at_30%_40%,rgba(0,230,255,0.12),transparent_70%),rgba(0,230,255,0.04)] shadow-[0_0_24px_rgba(0,230,255,0.10)]"
+                data-testid="badge-normal-secondary-2">NORMAL</div>
+            </div>
+
+            <div
+              class="relative w-full min-h-[43vh] flex-1 bg-gradient-to-b from-[rgba(3,6,14,0.35)] to-[rgba(0,0,0,0.62)] overflow-hidden"
+              data-testid="feed-camera-secondary-2" role="img" aria-label="Video feed: normal">
+              <video autoplay loop muted playsinline
+                class="absolute top-0 left-0 w-full h-full object-contain z-0 opacity-85">
+                <source src="{{ url_for('static', filename='video/cctv_demo_detection.mp4') }}" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+              <div
+                class="absolute inset-0 bg-[radial-gradient(450px_180px_at_20%_20%,rgba(0,230,255,0.10),transparent_62%),radial-gradient(500px_220px_at_70%_70%,rgba(0,230,255,0.06),transparent_65%)] opacity-85 pointer-events-none z-[1]"
+                aria-hidden="true"></div>
+              <div
+                class="absolute left-2.5 top-2.5 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.12em] uppercase text-[rgba(214,246,255,0.90)] bg-[rgba(0,230,255,0.06)] border border-[rgba(0,230,255,0.20)] rounded-full px-2.5 py-1.5 backdrop-blur-sm z-[2] pointer-events-none"
+                data-testid="text-feed-label-secondary-2">
+                <span class="w-2 h-2 rounded-full bg-cyan shadow-[0_0_14px_rgba(0,230,255,0.55)]"
+                  aria-hidden="true"></span>
+                INFERENCE ACTIVE
+              </div>
+            </div>
+
+            <div class="relative grid grid-cols-4 gap-2 p-2 pb-2.5 flex-shrink-0 mt-auto"
+              aria-label="Inference metrics">
+              <div
+                class="border border-[rgba(120,170,255,0.12)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-fire-confidence-secondary-2">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Fire</div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">0.9<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span></div>
+              </div>
+              <div
+                class="border border-[rgba(120,170,255,0.12)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-smoke-confidence-secondary-2">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Smoke</div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">2.4<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span></div>
+              </div>
+              <div
+                class="border border-[rgba(120,170,255,0.12)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-latency-secondary-2">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Latency
+                </div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">16<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">ms</span></div>
+              </div>
+              <div
+                class="border border-[rgba(120,170,255,0.12)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)]"
+                data-testid="metric-model-secondary-2">
+                <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Model</div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">v9<span
+                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1"> edge</span></div>
+              </div>
+            </div>
+          </article>
         </div>
-        <div class="header-actions">
-          <a class="logout-btn" href="index.html">Logout</a>
-
-        </div>
-
-      </header>
-
-
-      <section class="layout" aria-label="Monitoring layout">
-        <section class="panel" data-testid="panel-cameras" aria-label="Camera grid">
-          <div class="panel-header">
-            <div class="panel-title" data-testid="text-camera-grid-title">Camera View</div>
-            <select id="cameraSelector" class="camera-selector">
-              <option value="cam1">CAM-01 • Boiler Room</option>
-              <option value="cam2">CAM-02 • Corridor A</option>
-              <option value="cam3">CAM-03 • Loading Bay</option>
-            </select>
-          </div>
-
-          <div class="camera-grid">
-            <article class="camera alert" data-camera="cam1" data-testid="card-camera-primary"
-              aria-label="Primary camera alert">
-              <div class="camera-header">
-                <div class="camera-name" data-testid="text-camera-name-primary">CAM-01 • Boiler Room</div>
-                <div class="badge critical" data-testid="badge-critical-primary">CRITICAL</div>
-              </div>
-
-              <div class="feed alert" data-testid="feed-camera-primary" role="img"
-                aria-label="Video feed: fire detected">
-                <video autoplay loop muted playsinline>
-                  <source src="{{ url_for('static', filename='video/cctv_demo_detection.mp4') }}" type="video/mp4">
-                  Your browser does not support the video tag.
-                </video>
-                <div class="overlay" aria-hidden="true"></div>
-                <div class="label" data-testid="text-feed-label-primary">
-                  <span class="chip" aria-hidden="true"></span>
-                  FIRE DETECTED
-                </div>
-              </div>
-
-              <div class="metrics" aria-label="Inference metrics">
-                <div class="metric" data-testid="metric-fire-confidence-primary">
-                  <div class="k">Fire</div>
-                  <div class="v">92.4<span class="unit">%</span></div>
-                </div>
-                <div class="metric" data-testid="metric-smoke-confidence-primary">
-                  <div class="k">Smoke</div>
-                  <div class="v">71.8<span class="unit">%</span></div>
-                </div>
-                <div class="metric" data-testid="metric-latency-primary">
-                  <div class="k">Latency</div>
-                  <div class="v">18<span class="unit">ms</span></div>
-                </div>
-                <div class="metric" data-testid="metric-model-primary">
-                  <div class="k">Model</div>
-                  <div class="v">v9<span class="unit">edge</span></div>
-                </div>
-              </div>
-            </article>
-
-            <div class="camera-stack" aria-label="Secondary cameras">
-              <article class="camera" data-camera="cam2" data-testid="card-camera-secondary-1"
-                aria-label="Secondary camera normal">
-                <div class="camera-header">
-                  <div class="camera-name" data-testid="text-camera-name-secondary-1">CAM-02 • Corridor A</div>
-                  <div class="badge" data-testid="badge-normal-secondary-1">NORMAL</div>
-                </div>
-
-                <div class="feed" data-testid="feed-camera-secondary-1" role="img" aria-label="Video feed: normal">
-                  <video autoplay loop muted playsinline>
-                    <source src="{{ url_for('static', filename='video/cctv_demo_detection.mp4') }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <div class="overlay" aria-hidden="true"></div>
-                  <div class="label" data-testid="text-feed-label-secondary-1">
-                    <span class="chip" aria-hidden="true"></span>
-                    INFERENCE ACTIVE
-                  </div>
-                </div>
-
-                <div class="metrics" aria-label="Inference metrics">
-                  <div class="metric" data-testid="metric-fire-confidence-secondary-1">
-                    <div class="k">Fire</div>
-                    <div class="v">1.6<span class="unit">%</span></div>
-                  </div>
-                  <div class="metric" data-testid="metric-smoke-confidence-secondary-1">
-                    <div class="k">Smoke</div>
-                    <div class="v">3.1<span class="unit">%</span></div>
-                  </div>
-                  <div class="metric" data-testid="metric-latency-secondary-1">
-                    <div class="k">Latency</div>
-                    <div class="v">14<span class="unit">ms</span></div>
-                  </div>
-                  <div class="metric" data-testid="metric-model-secondary-1">
-                    <div class="k">Model</div>
-                    <div class="v">v9<span class="unit"> edge</span></div>
-                  </div>
-                </div>
-              </article>
-
-              <article class="camera" data-camera="cam3" data-testid="card-camera-secondary-2"
-                aria-label="Secondary camera normal">
-                <div class="camera-header">
-                  <div class="camera-name" data-testid="text-camera-name-secondary-2">CAM-03 • Loading Bay</div>
-                  <div class="badge" data-testid="badge-normal-secondary-2">NORMAL</div>
-                </div>
-
-                <div class="feed" data-testid="feed-camera-secondary-2" role="img" aria-label="Video feed: normal">
-                  <video autoplay loop muted playsinline>
-                    <source src="{{ url_for('static', filename='video/cctv_demo_detection.mp4') }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <div class="overlay" aria-hidden="true"></div>
-                  <div class="label" data-testid="text-feed-label-secondary-2">
-                    <span class="chip" aria-hidden="true"></span>
-                    INFERENCE ACTIVE
-                  </div>
-                </div>
-
-                <div class="metrics" aria-label="Inference metrics">
-                  <div class="metric" data-testid="metric-fire-confidence-secondary-2">
-                    <div class="k">Fire</div>
-                    <div class="v">0.9<span class="unit">%</span></div>
-                  </div>
-                  <div class="metric" data-testid="metric-smoke-confidence-secondary-2">
-                    <div class="k">Smoke</div>
-                    <div class="v">2.4<span class="unit">%</span></div>
-                  </div>
-                  <div class="metric" data-testid="metric-latency-secondary-2">
-                    <div class="k">Latency</div>
-                    <div class="v">16<span class="unit">ms</span></div>
-                  </div>
-                  <div class="metric" data-testid="metric-model-secondary-2">
-                    <div class="k">Model</div>
-                    <div class="v">v9<span class="unit"> edge</span></div>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <aside class="panel log" data-testid="panel-inference-log" aria-label="AI inference log">
-          <div class="panel-header">
-            <div class="panel-title" data-testid="text-log-title">AI Inference Log</div>
-            <div class="panel-meta" data-testid="text-log-meta">Rolling buffer • 128 events</div>
-          </div>
-
-          <div class="log-body" data-testid="log-body">
-            <div class="log-line" data-testid="log-line-0">
-              <div class="ts">08:05:12</div>
-              <div class="msg">CAM-02 inference ok • fire=1.6% smoke=3.1% • latency=14ms</div>
-            </div>
-            <div class="log-line" data-testid="log-line-1">
-              <div class="ts">08:05:11</div>
-              <div class="msg">CAM-03 inference ok • fire=0.9% smoke=2.4% • latency=16ms</div>
-            </div>
-            <div class="log-line alert" data-testid="log-line-2">
-              <div class="ts">08:05:10</div>
-              <div class="msg">ALERT • CAM-01 fire probability exceeded threshold (92.4%)</div>
-            </div>
-            <div class="log-line" data-testid="log-line-3">
-              <div class="ts">08:05:09</div>
-              <div class="msg">CAM-01 inference running • smoke rising trend detected</div>
-            </div>
-            <div class="log-line" data-testid="log-line-4">
-              <div class="ts">08:05:08</div>
-              <div class="msg">CAM-02 inference ok • no anomalies detected</div>
-            </div>
-            <div class="log-line" data-testid="log-line-5">
-              <div class="ts">08:05:07</div>
-              <div class="msg">Model warm state confirmed • GPU utilization stable</div>
-            </div>
-            <div class="log-line" data-testid="log-line-6">
-              <div class="ts">08:05:06</div>
-              <div class="msg">CAM-03 inference ok • fire=1.0% smoke=2.6% • latency=17ms</div>
-            </div>
-            <div class="log-line alert" data-testid="log-line-7">
-              <div class="ts">08:05:05</div>
-              <div class="msg">ALERT • CAM-01 smoke probability exceeded threshold (71.8%)</div>
-            </div>
-            <div class="log-line" data-testid="log-line-8">
-              <div class="ts">08:05:04</div>
-              <div class="msg">CAM-01 inference ok • fire=48.2% smoke=41.3% • latency=19ms</div>
-            </div>
-            <div class="log-line" data-testid="log-line-9">
-              <div class="ts">08:05:03</div>
-              <div class="msg">CAM-02 inference ok • fire=1.4% smoke=3.0% • latency=13ms</div>
-            </div>
-
-            <div class="hint" data-testid="text-log-hint">Scroll to view earlier events.</div>
-          </div>
-        </aside>
       </section>
 
-      <!-- Footer -->
-      <footer class="footer" data-testid="footer-monitoring">
-        <div class="footer-main">
-          <div class="footer-content">
-            <div class="footer-title">SmartVision FireGuard</div>
-            <div class="footer-text">AI-Powered Fire Detection System • Real-time Monitoring & Alert Platform</div>
-          </div>
-          <div class="footer-badge">
-            <span class="footer-badge-icon" aria-hidden="true"></span>
-            <span class="footer-badge-text">System v1.0</span>
-          </div>
+      <aside
+        class="glass-panel border border-[rgba(120,170,255,0.12)] rounded-[14px] shadow-[0_10px_26px_rgba(0,0,0,0.38)] overflow-hidden h-full flex flex-col"
+        data-testid="panel-inference-log" aria-label="AI inference log">
+        <div
+          class="flex items-center justify-between gap-3 px-3.5 py-3 border-b border-[rgba(120,170,255,0.10)] bg-gradient-to-b from-[rgba(11,18,34,0.92)] to-[rgba(10,18,36,0.72)]">
+          <div class="font-mono text-xs uppercase tracking-[0.14em] text-[rgba(205,225,255,0.86)]"
+            data-testid="text-log-title">AI Inference Log</div>
+          <div class="font-mono text-[11px] text-[rgba(170,196,232,0.70)]" data-testid="text-log-meta">Rolling buffer •
+            128 events</div>
         </div>
-        <div class="footer-bottom">
-          <div class="footer-copyright">
-            © 2026 SmartVision FireGuard. All rights reserved.
-          </div>
-          <div class="footer-links">
-            <a href="#" class="footer-link">Privacy Policy</a>
-            <a href="#" class="footer-link">Terms of Service</a>
-            <a href="#" class="footer-link">About</a>
-            <a href="#" class="footer-link">Contact</a>
-            <a href="#" class="footer-link">System Status</a>
-          </div>
-        </div>
-      </footer>
-    </main>
 
-    <script>
+        <div
+          class="p-4 flex-1 overflow-auto scrollbar-custom bg-[radial-gradient(600px_220px_at_30%_0%,rgba(0,230,255,0.06),transparent_60%),rgba(6,10,20,0.40)]"
+          data-testid="log-body">
+          <div
+            class="grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border border-[rgba(120,170,255,0.08)] rounded-xl bg-[rgba(10,18,36,0.45)] mb-2"
+            data-testid="log-line-0">
+            <div class="font-mono text-[11px] tracking-wider text-[rgba(186,205,232,0.55)]">08:05:12</div>
+            <div class="font-mono text-xs text-[rgba(205,225,255,0.78)] leading-snug">CAM-02 inference ok • fire=1.6%
+              smoke=3.1% • latency=14ms</div>
+          </div>
+          <div
+            class="grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border border-[rgba(120,170,255,0.08)] rounded-xl bg-[rgba(10,18,36,0.45)] mb-2"
+            data-testid="log-line-1">
+            <div class="font-mono text-[11px] tracking-wider text-[rgba(186,205,232,0.55)]">08:05:11</div>
+            <div class="font-mono text-xs text-[rgba(205,225,255,0.78)] leading-snug">CAM-03 inference ok • fire=0.9%
+              smoke=2.4% • latency=16ms</div>
+          </div>
+          <div
+            class="grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border border-[rgba(255,59,59,0.24)] rounded-xl bg-[radial-gradient(380px_160px_at_20%_0%,rgba(255,59,59,0.12),transparent_62%),rgba(16,8,14,0.52)] mb-2"
+            data-testid="log-line-2">
+            <div class="font-mono text-[11px] tracking-wider text-[rgba(255,180,180,0.72)]">08:05:10</div>
+            <div class="font-mono text-xs text-[rgba(255,214,214,0.92)] leading-snug">ALERT • CAM-01 fire probability
+              exceeded threshold (92.4%)</div>
+          </div>
+          <div
+            class="grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border border-[rgba(120,170,255,0.08)] rounded-xl bg-[rgba(10,18,36,0.45)] mb-2"
+            data-testid="log-line-3">
+            <div class="font-mono text-[11px] tracking-wider text-[rgba(186,205,232,0.55)]">08:05:09</div>
+            <div class="font-mono text-xs text-[rgba(205,225,255,0.78)] leading-snug">CAM-01 inference running • smoke
+              rising trend detected</div>
+          </div>
+          <div
+            class="grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border border-[rgba(120,170,255,0.08)] rounded-xl bg-[rgba(10,18,36,0.45)] mb-2"
+            data-testid="log-line-4">
+            <div class="font-mono text-[11px] tracking-wider text-[rgba(186,205,232,0.55)]">08:05:08</div>
+            <div class="font-mono text-xs text-[rgba(205,225,255,0.78)] leading-snug">CAM-02 inference ok • no anomalies
+              detected</div>
+          </div>
+          <div
+            class="grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border border-[rgba(120,170,255,0.08)] rounded-xl bg-[rgba(10,18,36,0.45)] mb-2"
+            data-testid="log-line-5">
+            <div class="font-mono text-[11px] tracking-wider text-[rgba(186,205,232,0.55)]">08:05:07</div>
+            <div class="font-mono text-xs text-[rgba(205,225,255,0.78)] leading-snug">Model warm state confirmed • GPU
+              utilization stable</div>
+          </div>
+          <div
+            class="grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border border-[rgba(120,170,255,0.08)] rounded-xl bg-[rgba(10,18,36,0.45)] mb-2"
+            data-testid="log-line-6">
+            <div class="font-mono text-[11px] tracking-wider text-[rgba(186,205,232,0.55)]">08:05:06</div>
+            <div class="font-mono text-xs text-[rgba(205,225,255,0.78)] leading-snug">CAM-03 inference ok • fire=1.0%
+              smoke=2.6% • latency=17ms</div>
+          </div>
+          <div
+            class="grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border border-[rgba(255,59,59,0.24)] rounded-xl bg-[radial-gradient(380px_160px_at_20%_0%,rgba(255,59,59,0.12),transparent_62%),rgba(16,8,14,0.52)] mb-2"
+            data-testid="log-line-7">
+            <div class="font-mono text-[11px] tracking-wider text-[rgba(255,180,180,0.72)]">08:05:05</div>
+            <div class="font-mono text-xs text-[rgba(255,214,214,0.92)] leading-snug">ALERT • CAM-01 smoke probability
+              exceeded threshold (71.8%)</div>
+          </div>
+          <div
+            class="grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border border-[rgba(120,170,255,0.08)] rounded-xl bg-[rgba(10,18,36,0.45)] mb-2"
+            data-testid="log-line-8">
+            <div class="font-mono text-[11px] tracking-wider text-[rgba(186,205,232,0.55)]">08:05:04</div>
+            <div class="font-mono text-xs text-[rgba(205,225,255,0.78)] leading-snug">CAM-01 inference ok • fire=48.2%
+              smoke=41.3% • latency=19ms</div>
+          </div>
+          <div
+            class="grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border border-[rgba(120,170,255,0.08)] rounded-xl bg-[rgba(10,18,36,0.45)] mb-2"
+            data-testid="log-line-9">
+            <div class="font-mono text-[11px] tracking-wider text-[rgba(186,205,232,0.55)]">08:05:03</div>
+            <div class="font-mono text-xs text-[rgba(205,225,255,0.78)] leading-snug">CAM-02 inference ok • fire=1.4%
+              smoke=3.0% • latency=13ms</div>
+          </div>
+
+          <div class="mt-2.5 font-mono text-[11px] text-[rgba(186,205,232,0.55)] tracking-wider"
+            data-testid="text-log-hint">Scroll to view earlier events.</div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Footer -->
+    <footer
+      class="mt-8 border border-[rgba(120,170,255,0.12)] rounded-[14px] bg-gradient-to-b from-[rgba(12,20,40,0.85)] to-[rgba(8,12,24,0.60)] shadow-[0_10px_26px_rgba(0,0,0,0.38)] backdrop-blur-[10px] overflow-hidden"
+      data-testid="footer-monitoring">
+      <div class="p-5 px-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="font-mono text-[13px] uppercase tracking-[0.10em] text-[rgba(205,225,255,0.88)] font-semibold">
+            SmartVision FireGuard</div>
+          <div class="font-mono text-[11px] text-[rgba(186,205,232,0.72)] tracking-wider mt-1.5">AI-Powered Fire
+            Detection System • Real-time Monitoring & Alert Platform</div>
+        </div>
+        <div
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-[rgba(0,230,255,0.22)] bg-[radial-gradient(140px_60px_at_30%_40%,rgba(0,230,255,0.10),transparent_70%),rgba(0,230,255,0.04)] shadow-[0_0_20px_rgba(0,230,255,0.08)]">
+          <span class="w-2 h-2 rounded-full bg-cyan shadow-[0_0_12px_rgba(0,230,255,0.50)]" aria-hidden="true"></span>
+          <span class="font-mono text-[11px] uppercase tracking-[0.10em] text-[rgba(173,251,255,0.92)]">System
+            v1.0</span>
+        </div>
+      </div>
+      <div
+        class="px-4 py-3.5 border-t border-[rgba(120,170,255,0.10)] bg-gradient-to-b from-[rgba(8,12,24,0.70)] to-[rgba(6,10,18,0.50)] flex flex-wrap items-center justify-between gap-3">
+        <div class="font-mono text-[10px] text-[rgba(186,205,232,0.60)] tracking-wider">
+          © 2026 SmartVision FireGuard. All rights reserved.
+        </div>
+        <div class="flex flex-wrap items-center gap-4">
+          <a href="#"
+            class="font-mono text-[10px] uppercase tracking-[0.08em] text-[rgba(186,205,232,0.70)] transition-colors hover:text-[rgba(0,230,255,0.95)]">Privacy
+            Policy</a>
+          <a href="#"
+            class="font-mono text-[10px] uppercase tracking-[0.08em] text-[rgba(186,205,232,0.70)] transition-colors hover:text-[rgba(0,230,255,0.95)]">Terms
+            of Service</a>
+          <a href="#"
+            class="font-mono text-[10px] uppercase tracking-[0.08em] text-[rgba(186,205,232,0.70)] transition-colors hover:text-[rgba(0,230,255,0.95)]">About</a>
+          <a href="#"
+            class="font-mono text-[10px] uppercase tracking-[0.08em] text-[rgba(186,205,232,0.70)] transition-colors hover:text-[rgba(0,230,255,0.95)]">Contact</a>
+          <a href="#"
+            class="font-mono text-[10px] uppercase tracking-[0.08em] text-[rgba(186,205,232,0.70)] transition-colors hover:text-[rgba(0,230,255,0.95)]">System
+            Status</a>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
       // Camera switching functionality
       (function () {
         var selector = document.getElementById('cameraSelector');
@@ -258,14 +434,14 @@
 
         function showCamera(camId) {
           // Hide all cameras
-          if (cam1) cam1.style.display = 'none';
-          if (cam2) cam2.style.display = 'none';
-          if (cam3) cam3.style.display = 'none';
+          if (cam1) cam1.classList.add('hidden');
+          if (cam2) cam2.classList.add('hidden');
+          if (cam3) cam3.classList.add('hidden');
 
           // Show selected camera
-          if (camId === 'cam1' && cam1) cam1.style.display = 'block';
-          if (camId === 'cam2' && cam2) cam2.style.display = 'block';
-          if (camId === 'cam3' && cam3) cam3.style.display = 'block';
+          if (camId === 'cam1' && cam1) cam1.classList.remove('hidden');
+          if (camId === 'cam2' && cam2) cam2.classList.remove('hidden');
+          if (camId === 'cam3' && cam3) cam3.classList.remove('hidden');
         }
 
         // Show first camera by default
@@ -282,7 +458,7 @@
         var log = document.querySelector('[data-testid="log-body"]');
         if (log) log.scrollTop = 0;
       })();
-    </script>
+  </script>
 </body>
 
 </html>
