@@ -16,9 +16,9 @@
       var roleValue = role ? role.value : 'User';
 
       if (roleValue === 'Admin') {
-        window.location.href = 'admin.html';
+        window.location.href = '/admin';
       } else {
-        window.location.href = 'monitoring.html';
+        window.location.href = '/monitoring';
       }
     });
   }
