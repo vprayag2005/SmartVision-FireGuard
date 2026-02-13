@@ -58,13 +58,7 @@
           Detection System • USER Monitoring</div>
       </div>
 
-      <div
-        class="inline-flex items-center gap-2.5 px-3 py-2.5 rounded-full border border-[rgba(53,255,143,0.25)] bg-gradient-to-b from-[rgba(12,22,26,0.65)] to-[rgba(6,10,14,0.35)] shadow-[0_0_0_1px_rgba(53,255,143,0.05),0_0_24px_rgba(53,255,143,0.12)]"
-        data-testid="status-model-running" aria-label="Model running">
-        <span class="w-2.5 h-2.5 rounded-full bg-green shadow-[0_0_0_0_rgba(53,255,143,0.45)] animate-pulse-dot"
-          aria-hidden="true"></span>
-        <span class="font-mono text-xs tracking-[0.08em] text-[rgba(224,255,240,0.90)]">MODEL RUNNING</span>
-      </div>
+
 
       <a class="font-mono text-xs tracking-[0.12em] uppercase px-[18px] py-2.5 rounded-full text-[rgba(255,230,230,0.95)] border border-[rgba(255,59,59,0.35)] bg-[radial-gradient(160px_60px_at_30%_40%,rgba(255,59,59,0.18),transparent_70%),rgba(255,59,59,0.06)] shadow-[0_0_0_1px_rgba(255,59,59,0.15),0_0_28px_rgba(255,59,59,0.22)] transition-all duration-[180ms] hover:border-[rgba(255,59,59,0.6)] hover:shadow-[0_0_0_1px_rgba(255,59,59,0.35),0_0_40px_rgba(255,59,59,0.45)] hover:-translate-y-px"
         href="index.html">Logout</a>
@@ -96,24 +90,21 @@
               class="relative flex items-center justify-between gap-2.5 px-3 py-2.5 border-b border-[rgba(120,170,255,0.10)] flex-shrink-0">
               <div class="font-mono text-xs tracking-[0.08em] text-[rgba(220,238,255,0.92)] uppercase"
                 data-testid="text-camera-name-primary">CAM-01 • Boiler Room</div>
-              <div
-                class="font-mono text-[11px] tracking-[0.10em] uppercase px-2.5 py-1.5 rounded-full border border-[rgba(255,59,59,0.35)] text-[rgba(255,210,210,0.95)] bg-[radial-gradient(180px_80px_at_30%_40%,rgba(255,59,59,0.18),transparent_70%),rgba(255,59,59,0.06)] shadow-[0_0_36px_rgba(255,59,59,0.18)]"
-                data-testid="badge-critical-primary">CRITICAL</div>
+              <div id="cam1-status-badge"
+                class="font-mono text-[11px] tracking-[0.10em] uppercase px-2.5 py-1.5 rounded-full border border-[rgba(53,255,143,0.25)] text-[rgba(224,255,240,0.90)] bg-[rgba(12,22,26,0.65)] shadow-[0_0_24px_rgba(53,255,143,0.12)]"
+                data-testid="badge-critical-primary">NORMAL</div>
             </div>
 
             <div
               class="relative w-full min-h-[43vh] flex-1 bg-gradient-to-b from-[rgba(30,2,6,0.35)] to-[rgba(0,0,0,0.72)] overflow-hidden"
               data-testid="feed-camera-primary" role="img" aria-label="Video feed: fire detected">
-              <video autoplay loop muted playsinline
-                class="absolute top-0 left-0 w-full h-full object-contain z-0 opacity-85">
-                <source src="{{ url_for('static', filename='video/cctv_demo_detection.mp4') }}" type="video/mp4">
-                Your browser does not support the video tag.
-              </video>
-              <div
-                class="absolute inset-0 bg-[radial-gradient(700px_280px_at_40%_0%,rgba(255,59,59,0.18),transparent_62%),radial-gradient(650px_260px_at_70%_100%,rgba(0,230,255,0.05),transparent_62%)] opacity-85 pointer-events-none z-[1]"
+              <img src="{{ url_for('video_feed') }}"
+                class="absolute top-0 left-0 w-full h-full object-contain z-0 opacity-85" alt="Live Camera Feed">
+              <div id="cam1-overlay-bg"
+                class="hidden absolute inset-0 bg-[radial-gradient(700px_280px_at_40%_0%,rgba(255,59,59,0.18),transparent_62%),radial-gradient(650px_260px_at_70%_100%,rgba(0,230,255,0.05),transparent_62%)] opacity-85 pointer-events-none z-[1]"
                 aria-hidden="true"></div>
-              <div
-                class="absolute left-2.5 top-2.5 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.12em] uppercase text-[rgba(255,232,232,0.92)] bg-[rgba(255,59,59,0.07)] border border-[rgba(255,59,59,0.26)] rounded-full px-2.5 py-1.5 backdrop-blur-sm z-[2] pointer-events-none"
+              <div id="cam1-overlay-text"
+                class="hidden absolute left-2.5 top-2.5 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.12em] uppercase text-[rgba(255,232,232,0.92)] bg-[rgba(255,59,59,0.07)] border border-[rgba(255,59,59,0.26)] rounded-full px-2.5 py-1.5 backdrop-blur-sm z-[2] pointer-events-none"
                 data-testid="text-feed-label-primary">
                 <span class="w-2 h-2 rounded-full bg-red shadow-[0_0_16px_rgba(255,59,59,0.55)] animate-pulse-red"
                   aria-hidden="true"></span>
@@ -149,8 +140,7 @@
                 class="border border-[rgba(255,59,59,0.18)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,59,59,0.05)] to-[rgba(255,255,255,0.01)]"
                 data-testid="metric-model-primary">
                 <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Model</div>
-                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(255,232,232,0.95)]">v9<span
-                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1"> edge</span></div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(255,232,232,0.95)]">v11n</div>
               </div>
             </div>
           </article>
@@ -216,8 +206,7 @@
                 class="border border-[rgba(120,170,255,0.12)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)]"
                 data-testid="metric-model-secondary-1">
                 <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Model</div>
-                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">v9<span
-                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1"> edge</span></div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">v11n</div>
               </div>
             </div>
           </article>
@@ -283,8 +272,7 @@
                 class="border border-[rgba(120,170,255,0.12)] rounded-[10px] px-2 py-2 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)]"
                 data-testid="metric-model-secondary-2">
                 <div class="font-mono text-[9px] uppercase tracking-[0.14em] text-[rgba(186,205,232,0.68)]">Model</div>
-                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">v9<span
-                    class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1"> edge</span></div>
+                <div class="mt-1 font-mono text-[13px] tracking-[0.02em] text-[rgba(231,241,255,0.95)]">v11n</div>
               </div>
             </div>
           </article>
@@ -457,6 +445,91 @@
         // Keep log scrolled to top
         var log = document.querySelector('[data-testid="log-body"]');
         if (log) log.scrollTop = 0;
+
+        // Poll for stats and logs
+        function updateStats() {
+          fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+              if (!data) return;
+
+              // Update Metrics for CAM-01
+              const metrics = data.metrics;
+              if (metrics) {
+                // Fire
+                const fireEl = document.querySelector('[data-testid="metric-fire-confidence-primary"] .text-\\[rgba\\(255\\,232\\,232\\,0\\.95\\)\\]');
+                if (fireEl) fireEl.innerHTML = `${(metrics.fire_conf * 100).toFixed(1)}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span>`;
+
+                // Smoke
+                const smokeEl = document.querySelector('[data-testid="metric-smoke-confidence-primary"] .text-\\[rgba\\(255\\,232\\,232\\,0\\.95\\)\\]');
+                if (smokeEl) smokeEl.innerHTML = `${(metrics.smoke_conf * 100).toFixed(1)}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span>`;
+
+                // Latency
+                const latencyEl = document.querySelector('[data-testid="metric-latency-primary"] .text-\\[rgba\\(255\\,232\\,232\\,0\\.95\\)\\]');
+                if (latencyEl) latencyEl.innerHTML = `${metrics.latency}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">ms</span>`;
+
+                // Update Status Indicators (Badge & Overlay)
+                const isCritical = (metrics.fire_conf > 0.75 || metrics.smoke_conf > 0.75);
+                const badge = document.getElementById('cam1-status-badge');
+                const overlayBg = document.getElementById('cam1-overlay-bg');
+                const overlayText = document.getElementById('cam1-overlay-text');
+
+                if (isCritical) {
+                  // CRITICAL State
+                  if (badge) {
+                    badge.innerText = "CRITICAL";
+                    badge.className = "font-mono text-[11px] tracking-[0.10em] uppercase px-2.5 py-1.5 rounded-full border border-[rgba(255,59,59,0.35)] text-[rgba(255,210,210,0.95)] bg-[radial-gradient(180px_80px_at_30%_40%,rgba(255,59,59,0.18),transparent_70%),rgba(255,59,59,0.06)] shadow-[0_0_36px_rgba(255,59,59,0.18)]";
+                  }
+                  if (overlayBg) overlayBg.classList.remove('hidden');
+                  if (overlayText) overlayText.classList.remove('hidden');
+                } else {
+                  // NORMAL State
+                  if (badge) {
+                    badge.innerText = "NORMAL";
+                    badge.className = "font-mono text-[11px] tracking-[0.10em] uppercase px-2.5 py-1.5 rounded-full border border-[rgba(53,255,143,0.25)] text-[rgba(224,255,240,0.90)] bg-[rgba(12,22,26,0.65)] shadow-[0_0_24px_rgba(53,255,143,0.12)]";
+                  }
+                  if (overlayBg) overlayBg.classList.add('hidden');
+                  if (overlayText) overlayText.classList.add('hidden');
+                }
+              }
+
+              // Update Logs
+              const logs = data.logs;
+              if (logs && log) {
+                log.innerHTML = ''; // Clear existing logs
+
+                logs.forEach((entry, index) => {
+                  const isAlert = entry.type === 'alert';
+                  const borderClass = isAlert ? 'border-[rgba(255,59,59,0.24)]' : 'border-[rgba(120,170,255,0.08)]';
+                  const bgClass = isAlert
+                    ? 'bg-[radial-gradient(380px_160px_at_20%_0%,rgba(255,59,59,0.12),transparent_62%),rgba(16,8,14,0.52)]'
+                    : 'bg-[rgba(10,18,36,0.45)]';
+                  const timeColor = isAlert ? 'text-[rgba(255,180,180,0.72)]' : 'text-[rgba(186,205,232,0.55)]';
+                  const msgColor = isAlert ? 'text-[rgba(255,214,214,0.92)]' : 'text-[rgba(205,225,255,0.78)]';
+
+                  const div = document.createElement('div');
+                  div.className = `grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border ${borderClass} rounded-xl ${bgClass} mb-2`;
+                  div.setAttribute('data-testid', `log-line-${index}`);
+
+                  div.innerHTML = `
+                    <div class="font-mono text-[11px] tracking-wider ${timeColor}">${entry.time}</div>
+                    <div class="font-mono text-xs ${msgColor} leading-snug">${entry.msg}</div>
+                  `;
+                  log.appendChild(div);
+                });
+
+                const hint = document.createElement('div');
+                hint.className = "mt-2.5 font-mono text-[11px] text-[rgba(186,205,232,0.55)] tracking-wider";
+                hint.innerText = "Real-time inference logs";
+                log.appendChild(hint);
+              }
+            })
+            .catch(err => console.error('Error fetching stats:', err));
+        }
+
+        // Poll every 5 seconds
+        setInterval(updateStats, 5000);
+        updateStats(); // Initial call
       })();
   </script>
 </body>
