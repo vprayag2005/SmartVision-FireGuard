@@ -1,4 +1,7 @@
 venv/
+__pycache__/
+*.pyc
+yolov9/
 
 # Video files (keep directory structure but allow demo video)
 # static/video/*.mp4 is removed to allow LFS tracking
