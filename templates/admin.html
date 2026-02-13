@@ -40,9 +40,9 @@
 
       <nav class="grid gap-2.5">
         <a class="w-full px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all duration-150 hover:border-[rgba(40,247,255,0.45)] hover:-translate-y-px flex justify-center"
-          href="admin.html">Sources</a>
+          href="{{ url_for('admin') }}">Sources</a>
         <a class="w-full px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all duration-150 hover:border-[rgba(40,247,255,0.45)] hover:-translate-y-px flex justify-center"
-          href="index.html">Logout</a>
+          href="{{ url_for('index') }}">Logout</a>
       </nav>
     </aside>
 
