@@ -73,10 +73,13 @@ class VideoProcessor:
         self.inference_stats: Dict[str, Any] = {
             'fire_conf': 0.0,
             'smoke_conf': 0.0,
+            'fire_area': 0.0,
+            'smoke_area': 0.0,
             'latency': 0,
             'model': 'v9 edge'
         }
         self.last_log_time = 0.0
+        self.area_history: deque = deque(maxlen=120)  # Store last 120 snapshots (1 hour at 30s interval)
 
         if model_path and YOLO_AVAILABLE:
             try:
@@ -88,10 +91,17 @@ class VideoProcessor:
 
     def _process_detections(self, result: Results) -> Results:
         if result.boxes is None or len(result.boxes) == 0:
+            with self.lock:
+                self.inference_stats['fire_area'] = 0.0
+                self.inference_stats['smoke_area'] = 0.0
             return result
 
         final_boxes = []
         boxes_by_class: Dict[int, List[List[float]]] = {}
+
+        # Get image dimensions for normalization
+        img_h, img_w = result.orig_shape
+        total_pixels = img_h * img_w
 
         for box in result.boxes:
             cls_id = int(box.cls[0].item())
@@ -100,6 +110,8 @@ class VideoProcessor:
 
         max_fire_conf = 0.0
         max_smoke_conf = 0.0
+        max_fire_area = 0.0
+        max_smoke_area = 0.0
 
         for cls_id, boxes in boxes_by_class.items():
             merged_clusters = merge_boxes(boxes)
@@ -109,14 +121,23 @@ class VideoProcessor:
                 final_boxes.append(largest + [float(cls_id)])
 
                 conf = largest[4]
-                if cls_id == 0:
+                width = largest[2] - largest[0]
+                height = largest[3] - largest[1]
+                area_px = width * height
+                area_norm = (area_px / total_pixels) * 100.0  # Percentage of screen
+
+                if cls_id == 0: # Fire
                     max_fire_conf = max(max_fire_conf, conf)
-                elif cls_id == 1:
+                    max_fire_area = max(max_fire_area, area_norm)
+                elif cls_id == 1: # Smoke
                     max_smoke_conf = max(max_smoke_conf, conf)
+                    max_smoke_area = max(max_smoke_area, area_norm)
 
         with self.lock:
             self.inference_stats['fire_conf'] = float(max_fire_conf)
             self.inference_stats['smoke_conf'] = float(max_smoke_conf)
+            self.inference_stats['fire_area'] = float(max_fire_area)
+            self.inference_stats['smoke_area'] = float(max_smoke_area)
 
         if final_boxes:
             device = result.boxes.xyxy.device
@@ -154,10 +175,18 @@ class VideoProcessor:
 
     def _update_logs(self) -> None:
         current_time = time.time()
-        if (current_time - self.last_log_time) > 4.9:
+        # Update logs every 30 seconds (approx)
+        if (current_time - self.last_log_time) > 29.9:
             timestamp = datetime.datetime.now().strftime("%H:%M:%S")
             fire = self.inference_stats['fire_conf'] * 100
             smoke = self.inference_stats['smoke_conf'] * 100
+            
+            # Record growth history
+            self.area_history.append({
+                'time': timestamp,
+                'fire_area': self.inference_stats['fire_area'],
+                'smoke_area': self.inference_stats['smoke_area']
+            })
             
             msg = f"CAM-01 Snapshot • Fire: {fire:.1f}% • Smoke: {smoke:.1f}%"
             self.logs.appendleft({
@@ -171,8 +200,19 @@ class VideoProcessor:
         with self.lock:
             return {
                 'metrics': self.inference_stats,
-                'logs': list(self.logs)
+                'logs': list(self.logs),
+                'growth_history': list(self.area_history)
             }
+
+    def start_inference_thread(self):
+        """Starts the inference thread if it's not already running."""
+        # Check if thread is alive
+        if hasattr(self, 'inference_thread') and self.inference_thread.is_alive():
+            return
+
+        self.running = True
+        self.inference_thread = threading.Thread(target=self._inference_loop, daemon=True)
+        self.inference_thread.start()
 
     def generate_frames(self):
         cap = cv2.VideoCapture(str(self.video_path))
@@ -180,7 +220,7 @@ class VideoProcessor:
         interval = 1.0 / fps
 
         if self.model:
-            threading.Thread(target=self._inference_loop, daemon=True).start()
+            self.start_inference_thread()
 
         try:
             while True:
@@ -194,6 +234,7 @@ class VideoProcessor:
                     self.current_frame = frame
                     result = self.latest_result
 
+                # Check if result is stale (optional optimization) or just plot whatever we have
                 output = result.plot(img=frame) if result else frame
                 
                 ret, buffer = cv2.imencode('.jpg', output, [cv2.IMWRITE_JPEG_QUALITY, 70])
@@ -205,5 +246,7 @@ class VideoProcessor:
                 if interval > elapsed:
                     time.sleep(interval - elapsed)
         finally:
-            self.running = False
+            # Do NOT stop the inference thread here. 
+            # It should keep running or be managed globally.
+            # self.running = False 
             cap.release()
