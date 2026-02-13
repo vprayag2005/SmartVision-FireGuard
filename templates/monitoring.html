@@ -370,6 +370,19 @@
       </aside>
     </section>
 
+    <!-- Growth Analysis Graph -->
+    <section
+      class="mt-4 glass-panel border border-[rgba(120,170,255,0.12)] rounded-[14px] shadow-[0_10px_26px_rgba(0,0,0,0.38)] p-4"
+      aria-label="Growth Analysis">
+      <div class="flex items-center gap-3 border-b border-[rgba(120,170,255,0.10)] pb-3 mb-3">
+        <div class="font-mono text-xs uppercase tracking-[0.14em] text-[rgba(205,225,255,0.86)]">Growth Analysis</div>
+        <div class="font-mono text-[11px] text-[rgba(170,196,232,0.70)]">Area over time (30s interval)</div>
+      </div>
+      <div class="relative w-full h-[250px]">
+        <canvas id="growthChart"></canvas>
+      </div>
+    </section>
+
     <!-- Footer -->
     <footer
       class="mt-8 border border-[rgba(120,170,255,0.12)] rounded-[14px] bg-gradient-to-b from-[rgba(12,20,40,0.85)] to-[rgba(8,12,24,0.60)] shadow-[0_10px_26px_rgba(0,0,0,0.38)] backdrop-blur-[10px] overflow-hidden"
@@ -412,6 +425,7 @@
     </footer>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
       // Camera switching functionality
       (function () {
@@ -445,6 +459,108 @@
         // Keep log scrolled to top
         var log = document.querySelector('[data-testid="log-body"]');
         if (log) log.scrollTop = 0;
+
+        // --- Chart.js Setup ---
+        const ctx = document.getElementById('growthChart').getContext('2d');
+
+        // Gradient for Fire
+        const gradientFire = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientFire.addColorStop(0, 'rgba(255, 59, 59, 0.5)');
+        gradientFire.addColorStop(1, 'rgba(255, 59, 59, 0.0)');
+
+        // Gradient for Smoke
+        const gradientSmoke = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientSmoke.addColorStop(0, 'rgba(200, 200, 200, 0.5)');
+        gradientSmoke.addColorStop(1, 'rgba(200, 200, 200, 0.0)');
+
+        const growthChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Fire Area (%)',
+                data: [],
+                borderColor: '#ff3b3b',
+                backgroundColor: '#070b14', // Point center
+                pointBorderColor: '#ff3b3b',
+                pointBackgroundColor: '#070b14',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                borderWidth: 3,
+                tension: 0.3,
+                fill: false
+              },
+              {
+                label: 'Smoke Area (%)',
+                data: [],
+                borderColor: '#00e6ff', // Cyan for smoke to match theme
+                backgroundColor: '#070b14',
+                pointBorderColor: '#00e6ff',
+                pointBackgroundColor: '#070b14',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                borderWidth: 3,
+                tension: 0.3,
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: 'rgba(186, 205, 232, 0.72)',
+                  font: { family: 'ui-monospace, monospace', size: 10 },
+                  usePointStyle: true,
+                  pointStyle: 'circle'
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(10, 18, 36, 0.95)',
+                titleColor: '#fff',
+                bodyColor: '#ccc',
+                borderColor: 'rgba(120, 170, 255, 0.2)',
+                borderWidth: 1,
+                padding: 10,
+                displayColors: true,
+                usePointStyle: true
+              }
+            },
+            scales: {
+              x: {
+                grid: { color: 'rgba(120, 170, 255, 0.08)' },
+                ticks: {
+                  color: 'rgba(186, 205, 232, 0.6)',
+                  font: { size: 10, family: 'monospace' },
+                  maxRotation: 45,
+                  minRotation: 45
+                },
+                border: { display: true, color: 'rgba(120, 170, 255, 0.2)' }
+              },
+              y: {
+                beginAtZero: true,
+                max: 100,
+                grid: { color: 'rgba(120, 170, 255, 0.08)' },
+                ticks: {
+                  color: 'rgba(186, 205, 232, 0.6)',
+                  font: { size: 10, family: 'monospace' },
+                  stepSize: 20
+                },
+                border: { display: true, color: 'rgba(120, 170, 255, 0.2)' }
+
+              }
+            },
+            animation: {
+              duration: 750,
+              easing: 'easeOutQuart'
+            }
+          }
+        });
 
         // Poll for stats and logs
         function updateStats() {
@@ -523,12 +639,21 @@
                 hint.innerText = "Real-time inference logs";
                 log.appendChild(hint);
               }
+
+              // Update Chart
+              const history = data.growth_history;
+              if (history && growthChart) {
+                growthChart.data.labels = history.map(h => h.time);
+                growthChart.data.datasets[0].data = history.map(h => h.fire_area);
+                growthChart.data.datasets[1].data = history.map(h => h.smoke_area);
+                growthChart.update();
+              }
             })
             .catch(err => console.error('Error fetching stats:', err));
         }
 
-        // Poll every 5 seconds
-        setInterval(updateStats, 5000);
+        // Poll every 10 seconds
+        setInterval(updateStats, 10000);
         updateStats(); // Initial call
       })();
   </script>
