@@ -56,7 +56,7 @@ def merge_boxes(boxes: List[List[float]]) -> List[List[float]]:
 
 
 class VideoProcessor:
-    def __init__(self, video_path: str, model_path: Optional[str] = None, conf_threshold: float = 0.30):
+    def __init__(self, video_path: str, model_path: Optional[str] = None, conf_threshold: float = 0.35):
         self.video_path = Path(video_path)
         if not self.video_path.exists():
             raise FileNotFoundError(f"Video not found: {self.video_path}")
@@ -167,7 +167,8 @@ class VideoProcessor:
                         with self.lock:
                             self.latest_result = processed
                             self.inference_stats['latency'] = int(latency)
-                            self._update_logs()
+                        # We separate log appending from the fast stats update
+                        self._update_logs()
 
             except Exception as e:
                 print(f"Inference error: {e}")
@@ -175,24 +176,32 @@ class VideoProcessor:
 
     def _update_logs(self) -> None:
         current_time = time.time()
-        # Update logs every 30 seconds (approx)
+        
+        # Only append to logs and growth analysis chart every 30 seconds
         if (current_time - self.last_log_time) > 29.9:
             timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-            fire = self.inference_stats['fire_conf'] * 100
-            smoke = self.inference_stats['smoke_conf'] * 100
+            
+            with self.lock:
+                fire = self.inference_stats['fire_conf'] * 100
+                smoke = self.inference_stats['smoke_conf'] * 100
+                fire_area = self.inference_stats['fire_area']
+                smoke_area = self.inference_stats['smoke_area']
             
             # Record growth history
             self.area_history.append({
                 'time': timestamp,
-                'fire_area': self.inference_stats['fire_area'],
-                'smoke_area': self.inference_stats['smoke_area']
+                'fire_area': fire_area,
+                'smoke_area': smoke_area
             })
             
-            msg = f"CAM-01 Snapshot • Fire: {fire:.1f}% • Smoke: {smoke:.1f}%"
+            has_detection = fire > 10.0 or smoke > 10.0
+            log_type = "alert" if has_detection else "normal"
+            msg = f"Inference • Fire: {fire:.1f}% • Smoke: {smoke:.1f}%"
+            
             self.logs.appendleft({
                 'time': timestamp,
                 'msg': msg,
-                'type': "normal"
+                'type': log_type
             })
             self.last_log_time = current_time
 
@@ -203,6 +212,12 @@ class VideoProcessor:
                 'logs': list(self.logs),
                 'growth_history': list(self.area_history)
             }
+
+    def stop(self):
+        """Stops the inference thread."""
+        self.running = False
+        if hasattr(self, 'inference_thread') and self.inference_thread.is_alive():
+            self.inference_thread.join(timeout=1.0)
 
     def start_inference_thread(self):
         """Starts the inference thread if it's not already running."""
