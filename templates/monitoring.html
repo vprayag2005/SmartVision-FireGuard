@@ -25,6 +25,8 @@
           animation: {
             'pulse-dot': 'pulse-dot 1.35s ease-out infinite',
             'pulse-red': 'pulse-red 1.2s ease-out infinite',
+            'fire-flicker': 'fire-flicker 0.8s ease-in-out infinite alternate',
+            'alert-border': 'alert-border 1.5s ease-in-out infinite',
           },
           keyframes: {
             'pulse-dot': {
@@ -37,61 +39,155 @@
               '60%': { transform: 'scale(1.18)', opacity: '0.65' },
               '100%': { transform: 'scale(1)', opacity: '1' },
             },
+            'fire-flicker': {
+              '0%': { textShadow: '0 0 10px #ff3b3b, 0 0 30px #ff6600', transform: 'scale(1)' },
+              '100%': { textShadow: '0 0 20px #ff6600, 0 0 50px #ffaa00', transform: 'scale(1.08)' },
+            },
+            'alert-border': {
+              '0%': { boxShadow: '0 0 0 0 rgba(255,59,59,0.0), inset 0 0 40px rgba(255,59,59,0.05)' },
+              '50%': { boxShadow: '0 0 0 6px rgba(255,59,59,0.35), inset 0 0 60px rgba(255,59,59,0.12)' },
+              '100%': { boxShadow: '0 0 0 0 rgba(255,59,59,0.0), inset 0 0 40px rgba(255,59,59,0.05)' },
+            },
           }
         }
       }
     }
   </script>
+  <style>
+    @keyframes scan-line {
+      0% {
+        top: 0%;
+      }
+
+      100% {
+        top: 100%;
+      }
+    }
+
+    .alert-scan::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 59, 59, 0.6), transparent);
+      animation: scan-line 2s linear infinite;
+    }
+
+    .temporal-bar-fill {
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
 </head>
 
 <body class="min-h-screen text-gray-200 bg-[#0b1120] font-sans overflow-x-hidden">
 
-  <main class="max-w-[1440px] mx-auto px-6 py-6" data-testid="page-monitoring">
+  <!-- Fire Alert Overlay -->
+  <div id="fireAlertOverlay" class="fixed top-0 left-0 right-0 z-50 hidden items-center gap-5 px-6 py-3"
+    style="background: linear-gradient(90deg, rgba(130,0,0,0.98) 0%, rgba(50,5,5,0.99) 100%); border-bottom: 2px solid rgba(255,59,59,0.55); box-shadow: 0 4px 40px rgba(255,0,0,0.22);">
+    <div
+      class="text-3xl leading-none animate-[fire-flicker_0.8s_ease-in-out_infinite_alternate] select-none flex-shrink-0">
+      🔥</div>
+    <div class="flex flex-col justify-center min-w-0">
+      <div class="flex items-center gap-2.5">
+        <span class="text-sm font-black uppercase tracking-[0.22em] text-red-200"
+          style="text-shadow: 0 0 14px rgba(255,80,80,0.9);">FIRE DETECTED</span>
+        <span
+          class="inline-block w-2 h-2 rounded-full bg-red-400 flex-shrink-0 animate-[pulse-red_1.2s_ease-out_infinite]"></span>
+      </div>
+      <div class="flex items-center gap-3 mt-0.5 flex-wrap">
+        <span class="font-mono text-[11px] text-red-300/75" id="alertCameraName">—</span>
+        <span class="text-red-500/40 text-xs">|</span>
+        <span class="font-mono text-[11px] text-red-400/60" id="alertTimestamp">—</span>
+      </div>
+    </div>
+    <div class="flex-1"></div>
+    <div class="font-mono text-[10px] text-red-400/50 tracking-wide hidden md:block flex-shrink-0">
+      Temporal verification confirmed • Immediate action required
+    </div>
+  </div>
+
+  <audio id="fireAlarm" src="{{ url_for('static', filename='audio/fire_alarm.mp3') }}" loop preload="auto"></audio>
+
+  <!-- Session Activation Gate -->
+  <div id="activationGate" class="fixed inset-0 z-[100] flex flex-col items-center justify-center"
+    style="background: rgba(7,11,20,0.96); backdrop-filter: blur(8px);">
+    <div class="flex flex-col items-center gap-6 max-w-md text-center px-8">
+      <div
+        class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.5)]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-9 h-9 text-white" viewBox="0 0 24 24" fill="currentColor">
+          <path fill-rule="evenodd"
+            d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
+            clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div>
+        <div class="text-2xl font-black text-white tracking-wide mb-2">SmartVision FireGuard</div>
+        <div class="text-sm text-gray-400 font-mono">AI Fire &amp; Smoke Detection System</div>
+      </div>
+      <button id="activateBtn" class="w-full py-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-black text-base rounded-xl
+        transition-all duration-150 shadow-[0_0_30px_rgba(37,99,235,0.4)] border border-blue-400/30 tracking-wide">
+        ▶ ACTIVATE MONITORING SESSION
+      </button>
+      <div class="text-xs text-gray-600 font-mono">Audio alerts will be enabled for this session</div>
+    </div>
+  </div>
+
+  <main id="mainContent" class="max-w-[1440px] mx-auto px-6 py-6" data-testid="page-monitoring">
     <header
-      class="flex flex-wrap items-center justify-between gap-4 p-5 bg-[#111827] border border-[#1f2937] rounded-xl shadow-lg mb-6"
+      class="flex flex-row flex-nowrap items-center justify-between gap-2 md:gap-4 p-4 md:p-5 bg-[#111827] border border-[#1f2937] rounded-xl shadow-lg mb-6"
       data-testid="header-ai-system">
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3 md:gap-4 overflow-hidden">
         <div
-          class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+          class="w-8 h-8 md:w-10 md:h-10 shrink-0 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="currentColor">
             <path fill-rule="evenodd"
               d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
               clip-rule="evenodd" />
           </svg>
         </div>
-        <div>
-          <h1 class="text-xl font-bold text-white tracking-wide" data-testid="text-title">AI Monitoring Console</h1>
-          <div class="text-xs text-gray-400 font-medium" data-testid="text-subtitle">Real-time Fire & Smoke Detection
-            System</div>
+        <div class="min-w-0 pr-2 md:pr-0">
+          <h1 class="text-base md:text-xl font-bold text-white tracking-wide truncate" data-testid="text-title">
+            <span class="hidden sm:inline">AI Monitoring Console</span>
+            <span class="sm:hidden">AI Console</span>
+          </h1>
+          <div class="text-[10px] sm:text-xs md:text-xs text-gray-400 font-medium leading-tight mt-0.5 truncate"
+            data-testid="text-subtitle">
+            <span class="hidden sm:inline">Real-time Fire &amp; Smoke Detection System</span>
+            <span class="sm:hidden">Fire &amp; Smoke System</span>
+          </div>
         </div>
       </div>
 
       <div class="flex gap-3 items-center">
-        <a class="flex items-center gap-2 px-4 py-2 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-sm font-medium text-red-400 transition-colors"
-          href="{{ url_for('index') }}">
+        <a href="/logout"
+          class="px-4 py-2 border border-[#374151] rounded-lg text-sm text-gray-300 hover:bg-[#1f2937] hover:text-white transition-colors duration-150 shadow-sm flex items-center gap-2">
           Logout
         </a>
       </div>
     </header>
 
-    <section class="grid xl:grid-cols-[1.25fr_1fr] grid-cols-1 gap-6 items-stretch h-[calc(100vh-10rem)]"
+    <section
+      class="grid xl:grid-cols-[1.25fr_1fr] grid-cols-1 gap-6 items-stretch min-h-[calc(100vh-10rem)] xl:h-[calc(100vh-10rem)]"
       aria-label="Monitoring layout">
 
       <!-- Camera View Panel -->
-      <section class="bg-[#111827] border border-[#1f2937] rounded-xl shadow-lg overflow-hidden h-full flex flex-col"
+      <section class="bg-[#111827] border border-[#1f2937] rounded-xl shadow-lg overflow-hidden xl:h-full flex flex-col"
         data-testid="panel-cameras" aria-label="Camera grid">
-        <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-[#1f2937] bg-[#111827]">
-          <div class="font-bold text-sm tracking-wide text-white flex items-center gap-2"
+        <div
+          class="flex flex-row flex-nowrap items-center justify-between gap-2 px-4 md:px-6 py-4 border-b border-[#1f2937] bg-[#111827]">
+          <div class="font-bold text-xs md:text-sm tracking-wide text-white flex items-center gap-2 shrink-0"
             data-testid="text-camera-grid-title">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-              stroke="currentColor" class="w-5 h-5 text-gray-400">
+              stroke="currentColor" class="w-4 h-4 md:w-5 md:h-5 text-gray-400">
               <path stroke-linecap="round" stroke-linejoin="round"
                 d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
             </svg>
-            LIVE CAMERA FEED
+            <span class="hidden sm:inline">LIVE CAMERA FEED</span>
+            <span class="sm:hidden">LIVE FEED</span>
           </div>
           <select id="cameraSelector"
-            class="px-4 py-2 rounded-lg border border-[#374151] bg-[#1f2937] text-sm text-white font-medium cursor-pointer focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+            class="px-2 md:px-4 py-1.5 md:py-2 rounded-lg border border-[#374151] bg-[#1f2937] text-xs md:text-sm text-white font-medium cursor-pointer focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors w-[140px] md:w-auto truncate shrink">
             {% if cameras %}
             {% for cam in cameras %}
             <option value="cam{{ cam.id }}">{{ cam.name }} • {{ cam.location }}</option>
@@ -102,27 +198,24 @@
           </select>
         </div>
 
-        <div class="p-6 h-full flex-1 flex flex-col min-h-0 overflow-hidden bg-[#0b1120]/50">
+        <div class="p-6 xl:h-full flex-1 flex flex-col min-h-0 overflow-hidden bg-[#0b1120]/50">
           {% if cameras %}
           {% for cam in cameras %}
           <article
-            class="{% if loop.index > 1 %}hidden {% endif %}bg-[#0b1120] rounded-lg border border-[#374151] overflow-hidden relative w-full flex-1 min-h-[400px] flex flex-col shadow-inner"
-            data-camera="cam{{ cam.id }}" aria-label="{{ cam.name }} camera alert">
-
-
+            class="{% if loop.index > 1 %}hidden {% endif %}bg-[#0b1120] rounded-lg border border-[#374151] overflow-hidden relative w-full flex flex-col shadow-inner shrink-0 md:shrink"
+            data-camera="cam{{ cam.id }}" data-camera-name="{{ cam.name }}" aria-label="{{ cam.name }} camera alert">
 
             <!-- Video Container -->
-            <div
-              class="relative w-full flex-1 h-full min-h-[300px] flex items-center justify-center overflow-hidden bg-[#0b1120] mb-[72px]"
+            <div class="w-full flex-1 min-h-[300px] flex items-center justify-center bg-black overflow-hidden"
               role="img" aria-label="Video feed">
               <img src="{{ url_for('video_feed', cam_id=cam.id) }}"
                 onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%\' height=\'100%\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><path d=\'M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a1.5 1.5 0 100-3 1.5 1.5 0 000 3z\' fill=\'%23374151\' transform=\'translate(460, 180) scale(4)\'/><text x=\'50%\' y=\'65%\' font-family=\'system-ui, sans-serif\' font-size=\'18\' font-weight=\'600\' fill=\'%236b7280\' text-anchor=\'middle\' dominant-baseline=\'middle\'>AWAITING VIDEO STREAM...</text></svg>'; this.onerror=null;"
-                class="absolute inset-0 w-full h-full object-contain object-center z-10" alt="Live Camera Feed">
+                class="w-full h-full max-h-full block object-contain object-center" alt="Live Camera Feed">
             </div>
 
             <!-- Metrics bar at bottom of video -->
             <div
-              class="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-md border-t border-[#374151] grid grid-cols-4 divide-x divide-[#374151] z-10"
+              class="w-full shrink-0 bg-[#0b1120] border-t border-[#374151] grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#374151]"
               aria-label="Inference metrics">
               <div class="px-4 py-3 text-center">
                 <div class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">Fire Confidence</div>
@@ -164,7 +257,8 @@
       </section>
 
       <!-- Logs panel -->
-      <aside class="bg-[#111827] border border-[#1f2937] rounded-xl shadow-lg overflow-hidden h-full flex flex-col"
+      <aside
+        class="bg-[#111827] border border-[#1f2937] rounded-xl shadow-lg overflow-hidden h-[400px] xl:h-full flex flex-col"
         data-testid="panel-inference-log" aria-label="AI inference log">
         <div
           class="flex items-center justify-between gap-3 px-6 py-4 border-b border-[#1f2937] bg-[#111827] flex-shrink-0">
@@ -176,12 +270,11 @@
             </svg>
             SYSTEM LOGS
           </div>
-          <div class="text-[10px] uppercase font-bold text-blue-500 bg-blue-500/10 px-2py-1 rounded"
+          <div class="text-[10px] uppercase font-bold text-blue-500 bg-blue-500/10 px-2 py-1 rounded"
             data-testid="text-log-meta">Live Data</div>
         </div>
 
         <div class="p-4 flex-1 overflow-auto scrollbar-custom bg-[#0b1120]" data-testid="log-body">
-          <!-- Logs will populate here via JS -->
           <div class="text-xs text-gray-500 text-center mt-10">Awaiting inference events...</div>
         </div>
       </aside>
@@ -198,31 +291,131 @@
           </svg>
           GROWTH ANALYSIS
         </div>
-        <div class="text-xs text-gray-500 ml-auto">Visualizing Fire & Smoke area over 30s interval</div>
+        <div class="text-xs text-gray-500 ml-auto">Visualizing Fire &amp; Smoke area over 30s interval</div>
       </div>
       <div class="relative w-full h-[300px]">
         <canvas id="growthChart"></canvas>
       </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="mt-8 border-t border-[#1f2937] pt-6 pb-2" data-testid="footer-monitoring">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-              <path fill-rule="evenodd"
-                d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
-                clip-rule="evenodd" />
-            </svg>
+    <!-- Temporal Verification Panel -->
+    <section class="mt-6 bg-[#111827] border border-[#1f2937] rounded-xl shadow-lg p-6"
+      aria-label="Temporal Verification">
+      <div class="flex items-center gap-3 border-b border-[#1f2937] pb-4 mb-6">
+        <div class="font-bold text-sm tracking-wide text-white flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+            class="w-5 h-5 text-gray-400">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          TEMPORAL VERIFICATION
+        </div>
+        <div class="text-xs text-gray-500 ml-auto">Detection persistence over 30-second rolling window</div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+
+        <!-- Detection Persistence -->
+        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Detection Persistence</div>
+            <div class="font-mono text-xs text-gray-500" id="persistenceLabel">0 / 30 seconds</div>
           </div>
-          <div>
-            <div class="text-sm font-bold text-white tracking-wide">SmartVision FireGuard</div>
-            <div class="text-[10px] text-gray-500 mt-0.5">© 2026 AI Fire Detection System. All rights reserved.</div>
+          <div class="w-full bg-[#1f2937] rounded-full h-2.5 mb-3 overflow-hidden">
+            <div id="persistenceBarFire"
+              class="temporal-bar-fill h-2.5 rounded-full bg-gradient-to-r from-orange-600 to-red-500"
+              style="width: 0%"></div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-[11px] text-gray-500 font-mono">Fire frames detected</div>
+            <div id="persistencePercent" class="text-sm font-bold font-mono text-red-400">0%</div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-[#1f2937]">
+            <div class="text-[11px] text-gray-600 font-mono">Threshold: 10s continuous to confirm</div>
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-6">
+        <!-- Confidence Stability -->
+        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Confidence Stability</div>
+            <div id="stabilityBadge"
+              class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-gray-700 text-gray-400">
+              UNKNOWN
+            </div>
+          </div>
+          <div class="w-full bg-[#1f2937] rounded-full h-2.5 mb-3 overflow-hidden">
+            <div id="stabilityBar"
+              class="temporal-bar-fill h-2.5 rounded-full bg-gradient-to-r from-yellow-500 to-green-400"
+              style="width: 0%"></div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="text-[11px] text-gray-500 font-mono">Signal consistency</div>
+            <div id="stabilityPercent" class="text-sm font-bold font-mono text-emerald-400">—</div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-[#1f2937]">
+            <div class="text-[11px] text-gray-600 font-mono">High stability = low variance in readings</div>
+          </div>
+        </div>
+
+        <!-- Spatial Growth Trend -->
+        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Spatial Growth</div>
+            <div id="spatialTrendBadge"
+              class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-gray-700 text-gray-400">
+              MONITORING
+            </div>
+          </div>
+          <div class="flex items-center justify-center my-4">
+            <div id="spatialTrendIcon" class="text-5xl select-none" style="transition: all 0.5s;">📊</div>
+          </div>
+          <div class="text-center">
+            <div id="spatialTrendLabel" class="text-sm font-bold font-mono text-gray-400">Awaiting data...</div>
+            <div class="text-[11px] text-gray-600 font-mono mt-1">Fire region area comparison</div>
+          </div>
+        </div>
+
+        <!-- Temporal Risk Scoring (TRS) -->
+        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Temporal Risk Score</div>
+          </div>
+          <div class="flex items-center justify-center my-4">
+            <div id="trsScore" class="text-5xl font-black font-mono tracking-tighter"
+              style="color: #9ca3af; transition: color 0.5s;">
+              0.0
+            </div>
+          </div>
+          <div class="text-center mt-auto">
+            <div class="text-[11px] text-gray-600 font-mono">TRS = w₁P + w₂C + w₃G</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-8 border-t border-[#1f2937] pt-6 pb-6 md:pb-2" data-testid="footer-monitoring">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Brand/Logo Side -->
+        <div class="flex items-center justify-center md:justify-start w-full md:w-auto">
+          <div class="flex flex-col md:flex-row items-center gap-2 md:gap-3">
+            <div class="w-8 h-8 md:w-6 md:h-6 bg-blue-600 rounded flex items-center justify-center text-white shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-3 md:h-3" viewBox="0 0 24 24"
+                fill="currentColor">
+                <path fill-rule="evenodd"
+                  d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
+                  clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="text-center md:text-left">
+              <div class="text-sm font-bold text-white tracking-wide">SmartVision FireGuard</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">© 2026 AI Fire Detection System. All rights reserved.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center mt-4 md:mt-0 gap-6">
           <a href="#" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Privacy</a>
           <a href="#" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Terms</a>
           <a href="#" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Documentation</a>
@@ -235,62 +428,86 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-      // Camera switching functionality
       (function () {
-        var selector = document.getElementById('cameraSelector');
+        const selector = document.getElementById('cameraSelector');
+        const log = document.querySelector('[data-testid="log-body"]');
+        const fireAlarm = document.getElementById('fireAlarm');
+        const overlay = document.getElementById('fireAlertOverlay');
 
-        function showCamera(camId) {
-          // Hide all cameras
-          document.querySelectorAll('[data-camera]').forEach(function (el) {
-            el.classList.add('hidden');
+        let alertActive = false;
+        let previousFireConfirmed = false;
+        let audioUnlocked = false;
+        const mainEl = document.getElementById('mainContent');
+
+        const activateBtn = document.getElementById('activateBtn');
+        const activationGate = document.getElementById('activationGate');
+
+        activateBtn.addEventListener('click', function () {
+          fireAlarm.play().then(() => {
+            fireAlarm.pause();
+            fireAlarm.currentTime = 0;
+            audioUnlocked = true;
+          }).catch(() => {
+            audioUnlocked = true;
           });
+          activationGate.style.display = 'none';
+        });
 
-          // Show selected camera
-          var selected = document.querySelector('[data-camera="' + camId + '"]');
-          if (selected) {
-            selected.classList.remove('hidden');
+        function getActiveCameraName() {
+          const selected = selector ? selector.options[selector.selectedIndex] : null;
+          if (!selected) return 'Unknown Camera';
+          return selected.text.split('•')[0].trim();
+        }
+
+        function showAlert(cameraName) {
+          alertActive = true;
+          overlay.classList.remove('hidden');
+          overlay.classList.add('flex');
+          if (mainEl) mainEl.style.paddingTop = (overlay.offsetHeight + 24) + 'px';
+          document.getElementById('alertCameraName').textContent = cameraName;
+          document.getElementById('alertTimestamp').textContent = 'Since ' + new Date().toLocaleTimeString();
+          if (audioUnlocked) {
+            fireAlarm.currentTime = 0;
+            fireAlarm.play().catch(() => { });
+          } else {
+            audioUnlocked = false;
           }
         }
 
-        // Handle dropdown change
+        function hideAlert() {
+          alertActive = false;
+          overlay.classList.add('hidden');
+          overlay.classList.remove('flex');
+          if (mainEl) mainEl.style.paddingTop = '';
+          fireAlarm.pause();
+          fireAlarm.currentTime = 0;
+        }
+
+        function showCamera(camId) {
+          document.querySelectorAll('[data-camera]').forEach(el => el.classList.add('hidden'));
+          const selected = document.querySelector('[data-camera="' + camId + '"]');
+          if (selected) selected.classList.remove('hidden');
+        }
+
         if (selector) {
           selector.addEventListener('change', function () {
             sessionStorage.setItem('activeCamId', this.value);
             showCamera(this.value);
-            // Immediately update stats for the newly selected camera
-            if (typeof updateStats === 'function') {
-              updateStats();
-            }
+            if (typeof updateStats === 'function') updateStats();
           });
 
-          // Restore selected camera after an auto-refresh
           const savedCam = sessionStorage.getItem('activeCamId');
           if (savedCam && document.querySelector(`[value="${savedCam}"]`)) {
             selector.value = savedCam;
           }
 
-          // Show initially selected
-          if (selector.value) {
-            showCamera(selector.value);
-          }
+          if (selector.value) showCamera(selector.value);
         }
 
-        // Keep log scrolled to top
-        var log = document.querySelector('[data-testid="log-body"]');
         if (log) log.scrollTop = 0;
 
-        // --- Chart.js Setup ---
         const ctx = document.getElementById('growthChart').getContext('2d');
-
-        // Gradient for Fire
-        const gradientFire = ctx.createLinearGradient(0, 0, 0, 400);
-        gradientFire.addColorStop(0, 'rgba(255, 59, 59, 0.5)');
-        gradientFire.addColorStop(1, 'rgba(255, 59, 59, 0.0)');
-
-        // Gradient for Smoke
-        const gradientSmoke = ctx.createLinearGradient(0, 0, 0, 400);
-        gradientSmoke.addColorStop(0, 'rgba(200, 200, 200, 0.5)');
-        gradientSmoke.addColorStop(1, 'rgba(200, 200, 200, 0.0)');
+        const isMobile = window.innerWidth < 768;
 
         const growthChart = new Chart(ctx, {
           type: 'line',
@@ -301,7 +518,7 @@
                 label: 'Fire Area (%)',
                 data: [],
                 borderColor: '#ff3b3b',
-                backgroundColor: '#070b14', // Point center
+                backgroundColor: '#070b14',
                 pointBorderColor: '#ff3b3b',
                 pointBackgroundColor: '#070b14',
                 pointBorderWidth: 2,
@@ -314,7 +531,7 @@
               {
                 label: 'Smoke Area (%)',
                 data: [],
-                borderColor: '#00e6ff', // Cyan for smoke to match theme
+                borderColor: '#00e6ff',
                 backgroundColor: '#070b14',
                 pointBorderColor: '#00e6ff',
                 pointBackgroundColor: '#070b14',
@@ -357,7 +574,8 @@
                   color: 'rgba(186, 205, 232, 0.6)',
                   font: { size: 10, family: 'monospace' },
                   maxRotation: 45,
-                  minRotation: 45
+                  minRotation: 45,
+                  maxTicksLimit: isMobile ? 6 : 12
                 },
                 border: { display: true, color: 'rgba(120, 170, 255, 0.2)' }
               },
@@ -365,25 +583,111 @@
                 beginAtZero: true,
                 max: 100,
                 grid: { color: 'rgba(120, 170, 255, 0.08)' },
-                ticks: {
-                  color: 'rgba(186, 205, 232, 0.6)',
-                  font: { size: 10, family: 'monospace' },
-                  stepSize: 20
-                },
+                ticks: { color: 'rgba(186, 205, 232, 0.6)', font: { size: 10, family: 'monospace' }, stepSize: 20 },
                 border: { display: true, color: 'rgba(120, 170, 255, 0.2)' }
-
               }
             },
-            animation: {
-              duration: 750,
-              easing: 'easeOutQuart'
-            }
+            animation: { duration: 750, easing: 'easeOutQuart' }
           }
         });
 
-        // Poll for stats and logs
+        function updateTemporalPanel(temporal) {
+          if (!temporal) return;
+
+          const firePersistence = temporal.fire_persistence || 0;
+          const isConfirmed = temporal.fire_confirmed || false;
+
+          // Show the raw count out of the 30s window.
+          const target = 30;
+          const percent = Math.round((firePersistence / target) * 100);
+
+          const stability = temporal.fire_confidence_stability || 0;
+          const stabilityPct = Math.round(stability * 100);
+          const trend = temporal.spatial_trend || 'stable';
+
+          document.getElementById('persistenceLabel').textContent = `${firePersistence} / ${target} seconds`;
+
+          let barEl = document.getElementById('persistenceBarFire');
+
+          if (isConfirmed) {
+            barEl.style.background = '#ef4444'; // bg-red-500
+            barEl.style.boxShadow = '0 0 10px rgba(239,68,68,0.5)';
+            document.getElementById('persistencePercent').textContent = 'CONFIRMED';
+          } else {
+            barEl.style.background = 'linear-gradient(to right, #ea580c, #ef4444)'; // orange-600 to red-500
+            barEl.style.boxShadow = 'none';
+            document.getElementById('persistencePercent').textContent = percent + '%';
+          }
+
+          barEl.style.width = percent + '%';
+
+          document.getElementById('stabilityBar').style.width = stabilityPct + '%';
+          document.getElementById('stabilityPercent').textContent = stabilityPct + '%';
+
+          const stabilityBadge = document.getElementById('stabilityBadge');
+          if (stabilityPct >= 75) {
+            stabilityBadge.textContent = 'STABLE';
+            stabilityBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-green-500/20 text-green-400';
+          } else if (stabilityPct >= 40) {
+            stabilityBadge.textContent = 'MODERATE';
+            stabilityBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-yellow-500/20 text-yellow-400';
+          } else {
+            stabilityBadge.textContent = 'UNSTABLE';
+            stabilityBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-red-500/20 text-red-400';
+          }
+
+          const trendIcon = document.getElementById('spatialTrendIcon');
+          const trendLabel = document.getElementById('spatialTrendLabel');
+          const trendBadge = document.getElementById('spatialTrendBadge');
+          if (trend === 'growing') {
+            trendIcon.textContent = '📈';
+            trendLabel.textContent = 'GROWING — Fire spreading';
+            trendLabel.className = 'text-sm font-bold font-mono text-red-400';
+            trendBadge.textContent = 'GROWING';
+            trendBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-red-500/20 text-red-400';
+          } else if (trend === 'shrinking') {
+            trendIcon.textContent = '📉';
+            trendLabel.textContent = 'SHRINKING — Fire reducing';
+            trendLabel.className = 'text-sm font-bold font-mono text-green-400';
+          } else {
+            trendIcon.textContent = '➡️';
+            trendLabel.textContent = 'STABLE — No significant change';
+            trendLabel.className = 'text-sm font-bold font-mono text-blue-400';
+            trendBadge.textContent = 'STABLE';
+            trendBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-blue-500/20 text-blue-400';
+          }
+
+          // Update TRS (Temporal Risk Score)
+          if (temporal.risk_score !== undefined) {
+            const trs = temporal.risk_score;
+            const trsEl = document.getElementById('trsScore');
+
+            trsEl.textContent = trs.toFixed(1);
+
+            if (trs >= 75) {
+              trsEl.style.color = '#ef4444'; // red-500
+              trsEl.style.textShadow = '0 0 20px rgba(239,68,68,0.5)';
+            } else if (trs >= 40) {
+              trsEl.style.color = '#f59e0b'; // amber-500
+              trsEl.style.textShadow = '0 0 10px rgba(245,158,11,0.3)';
+            } else if (trs > 0) {
+              trsEl.style.color = '#3b82f6'; // blue-500
+              trsEl.style.textShadow = 'none';
+            } else {
+              trsEl.style.color = '#9ca3af'; // gray-400
+              trsEl.style.textShadow = 'none';
+            }
+          }
+
+          if (isConfirmed && !previousFireConfirmed) {
+            showAlert(getActiveCameraName());
+          } else if (!isConfirmed && previousFireConfirmed && alertActive) {
+            hideAlert();
+          }
+          previousFireConfirmed = isConfirmed;
+        }
+
         function updateStats() {
-          const selector = document.getElementById('cameraSelector');
           const activeCamId = selector ? selector.value.replace('cam', '') : null;
           if (!activeCamId) return;
 
@@ -392,35 +696,24 @@
             .then(data => {
               if (!data) return;
 
-              // Update Metrics for active camera
               const metrics = data.metrics;
               if (metrics) {
-                // Get active camera ID
-                const selector = document.getElementById('cameraSelector');
-                const activeCamId = selector ? selector.value : null;
-
-                if (activeCamId) {
-                  // Fire
-                  const fireEl = document.getElementById(activeCamId + '-fire');
+                const camKey = selector ? selector.value : null;
+                if (camKey) {
+                  const fireEl = document.getElementById(camKey + '-fire');
                   if (fireEl) fireEl.innerHTML = `${(metrics.fire_conf * 100).toFixed(1)}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span>`;
 
-                  // Smoke
-                  const smokeEl = document.getElementById(activeCamId + '-smoke');
+                  const smokeEl = document.getElementById(camKey + '-smoke');
                   if (smokeEl) smokeEl.innerHTML = `${(metrics.smoke_conf * 100).toFixed(1)}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span>`;
 
-                  // Latency
-                  const latencyEl = document.getElementById(activeCamId + '-latency');
+                  const latencyEl = document.getElementById(camKey + '-latency');
                   if (latencyEl) latencyEl.innerHTML = `${metrics.latency}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">ms</span>`;
-
-                  // No overlay text or badges update as requested.
                 }
               }
 
-              // Update Logs
               const logs = data.logs;
               if (logs && log) {
-                log.innerHTML = ''; // Clear existing logs
-
+                log.innerHTML = '';
                 logs.forEach((entry, index) => {
                   const isAlert = entry.type === 'alert';
                   const borderClass = isAlert ? 'border-[rgba(255,59,59,0.24)]' : 'border-[rgba(120,170,255,0.08)]';
@@ -433,37 +726,42 @@
                   const div = document.createElement('div');
                   div.className = `grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border ${borderClass} rounded-xl ${bgClass} mb-2`;
                   div.setAttribute('data-testid', `log-line-${index}`);
-
                   div.innerHTML = `
-                    <div class="font-mono text-[11px] tracking-wider ${timeColor}">${entry.time}</div>
-                    <div class="font-mono text-xs ${msgColor} leading-snug">${entry.msg}</div>
-                  `;
+                  <div class="font-mono text-[11px] tracking-wider ${timeColor}">${entry.time}</div>
+                  <div class="font-mono text-xs ${msgColor} leading-snug">${entry.msg}</div>
+                `;
                   log.appendChild(div);
                 });
 
                 const hint = document.createElement('div');
-                hint.className = "mt-2.5 font-mono text-[11px] text-[rgba(186,205,232,0.55)] tracking-wider";
-                hint.innerText = "Real-time inference logs";
+                hint.className = 'mt-2.5 font-mono text-[11px] text-[rgba(186,205,232,0.55)] tracking-wider';
+                hint.innerText = 'Real-time inference logs';
                 log.appendChild(hint);
               }
 
-              // Update Chart
               const history = data.growth_history;
               if (history && growthChart) {
-                growthChart.data.labels = history.map(h => h.time);
-                growthChart.data.datasets[0].data = history.map(h => h.fire_area);
-                growthChart.data.datasets[1].data = history.map(h => h.smoke_area);
+                const currentIsMobile = window.innerWidth < 768;
+                const displayHistory = currentIsMobile ? history.slice(-10) : history;
+
+                growthChart.data.labels = displayHistory.map(h => h.time);
+                growthChart.data.datasets[0].data = displayHistory.map(h => h.fire_area);
+                growthChart.data.datasets[1].data = displayHistory.map(h => h.smoke_area);
                 growthChart.update();
+              }
+
+              updateTemporalPanel(data.temporal_status);
+
+              if (alertActive && audioUnlocked && fireAlarm.paused) {
+                fireAlarm.play().catch(() => { });
               }
             })
             .catch(err => console.error('Error fetching stats:', err));
         }
 
-        // Poll every 1 second for stats to keep sync with real-time video
         setInterval(updateStats, 1000);
-        updateStats(); // Initial call
+        updateStats();
 
-        // Auto-refresh logic: Poll for camera configuration changes
         let currentCamIds = null;
         function checkCameraConfig() {
           fetch('/api/cameras')
@@ -474,17 +772,13 @@
               if (currentCamIds === null) {
                 currentCamIds = newIds;
               } else if (currentCamIds !== newIds) {
-                // Config changed! Auto refresh the page to load new players.
-                console.log("Camera configuration changed. Auto-refreshing...");
                 window.location.reload();
               }
             })
             .catch(err => console.error('Error checking cameras:', err));
         }
 
-        // Poll every 3 seconds for config changes
         setInterval(checkCameraConfig, 3000);
-
       })();
   </script>
 </body>
