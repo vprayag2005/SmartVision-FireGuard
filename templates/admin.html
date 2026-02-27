@@ -30,150 +30,420 @@
   </script>
 </head>
 
-<body class="min-h-screen text-white overflow-x-hidden">
-  <div class="bg-grid fixed inset-0 pointer-events-none -z-10"></div>
+<body class="min-h-screen text-gray-200 bg-[#0b1120] font-sans overflow-x-hidden">
+  <div class="flex h-screen overflow-hidden">
 
-  <div class="grid lg:grid-cols-[280px_1fr] grid-cols-1 min-h-screen">
     <!-- SIDEBAR -->
-    <aside class="p-[18px] border-r border-[rgba(160,210,255,0.10)] bg-[rgba(12,18,30,0.62)]">
-      <div class="font-orbitron text-xl font-semibold mb-6">Admin</div>
+    <aside class="w-[260px] flex-shrink-0 bg-[#0b1120] border-r border-[#1f2937] flex flex-col pt-6 pb-5">
+      <!-- Logo -->
+      <div class="px-6 mb-8 flex items-center gap-3">
+        <div
+          class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd"
+              d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
+              clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div>
+          <div class="font-bold text-sm tracking-wide text-white">AI FIRE DETECT</div>
+          <div class="text-[10px] uppercase tracking-wider text-gray-500 font-medium font-mono">Admin Panel</div>
+        </div>
+      </div>
 
-      <nav class="grid gap-2.5">
-        <a class="w-full px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all duration-150 hover:border-[rgba(40,247,255,0.45)] hover:-translate-y-px flex justify-center"
-          href="{{ url_for('admin') }}">Sources</a>
-        <a class="w-full px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all duration-150 hover:border-[rgba(40,247,255,0.45)] hover:-translate-y-px flex justify-center"
-          href="{{ url_for('index') }}">Logout</a>
+      <!-- Nav -->
+      <nav class="flex-1 px-4 space-y-1">
+        <a href="{{ url_for('admin') }}"
+          class="flex items-center gap-3 px-3 py-2.5 bg-[#1e293b] text-white rounded-lg group">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#3b82f6"
+            class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+          </svg>
+          <span class="font-medium text-sm">Sources</span>
+        </a>
       </nav>
+
+      <!-- Logout -->
+      <div class="px-4 mt-auto">
+        <a href="{{ url_for('index') }}"
+          class="flex items-center gap-3 px-3 py-2 text-gray-400 hover:text-white transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+          </svg>
+          <span class="text-sm font-medium">Logout</span>
+        </a>
+      </div>
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="p-[22px]">
-      <header class="flex flex-wrap justify-between items-end gap-4 mb-6">
-        <div>
-          <div class="font-mono text-xs uppercase tracking-[0.18em] text-[rgba(231,240,255,0.7)] mb-2">Management</div>
-          <div class="font-orbitron text-3xl font-bold">Source Registry</div>
+    <main class="flex-1 overflow-y-auto bg-[#0b1120]">
+      <div class="max-w-[1200px] mx-auto p-8 lg:p-10">
+
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h1 class="text-3xl font-bold text-white mb-1.5">Sources</h1>
+            <p class="text-sm text-gray-400">Manage surveillance inputs and video streams</p>
+          </div>
+          <div class="flex gap-3">
+            <button onclick="openModal('cctvModal')"
+              class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors shadow-[0_4px_14px_rgba(37,99,235,0.39)]">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                class="w-4 h-4 text-blue-200">
+                <path
+                  d="M3.25 4A2.25 2.25 0 001 6.25v7.5A2.25 2.25 0 003.25 16h7.5A2.25 2.25 0 0013 13.75v-7.5A2.25 2.25 0 0010.75 4h-7.5zM19 4.75a.75.75 0 00-1.28-.53l-3 3a.75.75 0 00-.22.53v4.5c0 .199.079.39.22.53l3 3a.75.75 0 001.28-.53V4.75z" />
+              </svg>
+              Add CCTV
+            </button>
+            <button onclick="openModal('videoModal')"
+              class="flex items-center gap-2 px-4 py-2 bg-[#1e293b] hover:bg-[#334155] border border-[#334155] text-white text-sm font-medium rounded-lg transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                class="w-4 h-4 text-gray-400">
+                <path
+                  d="M3.25 4A2.25 2.25 0 001 6.25v7.5A2.25 2.25 0 003.25 16h7.5A2.25 2.25 0 0013 13.75v-7.5A2.25 2.25 0 0010.75 4h-7.5zM19 4.75a.75.75 0 00-1.28-.53l-3 3a.75.75 0 00-.22.53v4.5c0 .199.079.39.22.53l3 3a.75.75 0 001.28-.53V4.75z" />
+              </svg>
+              Add Video
+            </button>
+          </div>
+        </header>
+
+        <!-- Search Bar -->
+        <div class="mb-6">
+          <div class="relative w-full max-w-md">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" class="w-4 h-4 text-gray-400">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </div>
+            <input type="text" id="searchInput"
+              class="bg-[#111827] border border-[#1f2937] text-white text-sm rounded-lg block w-full pl-10 p-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+              placeholder="Search sources by name or location...">
+          </div>
         </div>
 
-        <div class="flex gap-3">
-          <button
-            class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all duration-150 hover:border-[rgba(40,247,255,0.45)] hover:-translate-y-px"
-            type="button" onclick="openModal('cctvModal')">
-            Add CCTV
-          </button>
-          <button
-            class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all duration-150 hover:border-[rgba(40,247,255,0.45)] hover:-translate-y-px"
-            type="button" onclick="openModal('videoModal')">
-            Add Video
-          </button>
+        <!-- Table -->
+        <div class="bg-[#111827] border border-[#1f2937] rounded-xl overflow-hidden">
+          <table class="w-full text-left text-sm text-gray-400">
+            <thead
+              class="text-xs uppercase bg-[#1e293b]/50 border-b border-[#1f2937] text-gray-500 font-semibold tracking-wider">
+              <tr>
+                <th scope="col" class="px-6 py-4">Source Name</th>
+                <th scope="col" class="px-6 py-4">Type</th>
+                <th scope="col" class="px-6 py-4">Location</th>
+                <th scope="col" class="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#1f2937]">
+              {% if cameras %}
+              {% for cam in cameras %}
+              <tr class="hover:bg-[#1e293b]/30 transition-colors">
+                <td class="px-6 py-4">
+                  <div class="font-medium text-white">{{ cam.name }}</div>
+                  <div class="text-xs text-gray-500 mt-0.5 font-mono">ID: SRC-{{ "%04d" | format(cam.id) }}</div>
+                </td>
+                <td class="px-6 py-4">
+                  <span
+                    class="px-2.5 py-1 rounded bg-[#1e3a8a]/40 text-blue-400 text-[10px] font-bold tracking-wider border border-[#1e3a8a]">{{
+                    cam.type | upper }}</span>
+                </td>
+                <td class="px-6 py-4">{{ cam.location }}</td>
+                <td class="px-6 py-4 text-right">
+                  <form action="{{ url_for('delete_camera', cam_id=cam.id) }}" method="POST" class="inline"
+                    id="deleteForm-{{ cam.id }}">
+                    <button type="button" onclick="confirmDelete('{{ cam.id }}', '{{ cam.name|escape }}')"
+                      class="text-gray-500 hover:text-red-400 transition-colors bg-[#1f2937] hover:bg-[#374151] p-1.5 rounded-lg border border-[#374151]"
+                      title="Delete Source">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+              {% else %}
+              <tr>
+                <td colspan="5" class="px-6 py-12 text-center text-gray-500 text-sm">No detection sources configured
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
         </div>
-      </header>
 
-      <section
-        class="glass-panel border border-[rgba(160,210,255,0.14)] rounded-2xl shadow-[0_18px_60px_rgba(0,0,0,0.55)] p-4">
-        <table class="w-full border-collapse">
-          <thead>
-            <tr>
-              <th class="text-left p-3 font-mono text-xs border-b border-[rgba(160,210,255,0.12)]">Source Name</th>
-              <th class="text-left p-3 font-mono text-xs border-b border-[rgba(160,210,255,0.12)]">Type</th>
-              <th class="text-left p-3 font-mono text-xs border-b border-[rgba(160,210,255,0.12)]">Location</th>
-              <th class="text-left p-3 font-mono text-xs border-b border-[rgba(160,210,255,0.12)]">Status</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">Warehouse Cam 01</td>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">CCTV</td>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">North Wing</td>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)] text-cyan">● Active</td>
-            </tr>
-
-            <tr>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">Loading Dock 03</td>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">CCTV</td>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">Gate A</td>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)] text-cyan">● Active</td>
-            </tr>
-
-            <tr>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">R&D Corridor</td>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">CCTV</td>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)]">Level 2</td>
-              <td class="p-3.5 border-b border-[rgba(160,210,255,0.10)] text-[#ff3b3b]">● Offline</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+        <div class="mt-4 flex justify-between items-center text-xs text-gray-500">
+          <div>Showing {{ cameras | length }} total detection sources</div>
+        </div>
+      </div>
     </main>
   </div>
 
+  <script>
+    let formToSubmit = null;
+
+    function confirmDelete(camId, camName) {
+      formToSubmit = document.getElementById('deleteForm-' + camId);
+      const modal = document.getElementById('deleteModal');
+      const nameEl = document.getElementById('deleteSourceName');
+
+      nameEl.textContent = camName;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function executeDelete() {
+      if (formToSubmit) {
+        formToSubmit.submit();
+      }
+    }
+
+    function cancelDelete() {
+      formToSubmit = null;
+      document.getElementById('deleteModal').classList.add('hidden');
+      document.getElementById('deleteModal').classList.remove('flex');
+    }
+
+    // Search Filtering Library
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', function () {
+          const filter = this.value.toLowerCase();
+          const rows = document.querySelectorAll('tbody tr');
+          let hasVisible = false;
+
+          rows.forEach(row => {
+            // Skip the "no sources configured" row
+            if (row.cells.length === 1) return;
+
+            const textContent = row.textContent.toLowerCase();
+            if (textContent.includes(filter)) {
+              row.style.display = '';
+              hasVisible = true;
+            } else {
+              row.style.display = 'none';
+            }
+          });
+        });
+      }
+    });
+  </script>
   <script src="static/js/script.js"></script>
 
   <!-- ADD CCTV MODAL -->
-  <div class="fixed inset-0 bg-black/65 hidden items-center justify-center z-[1000]" id="cctvModal">
+  <div class="fixed inset-0 modal-overlay hidden items-center justify-center z-[1000]" id="cctvModal">
     <div
-      class="glass-panel glow-edge relative w-[min(420px,90%)] p-5 border border-[rgba(160,210,255,0.14)] rounded-2xl shadow-[0_18px_60px_rgba(0,0,0,0.55)] grid gap-3.5">
-      <div class="flex justify-between items-center">
-        <div class="font-orbitron text-xl font-semibold">Add CCTV Source</div>
-        <button
-          class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all"
-          onclick="closeModal('cctvModal')">✕</button>
-      </div>
+      class="bg-[#111827] w-[min(480px,95%)] border border-[#1f2937] rounded-xl shadow-2xl flex flex-col overflow-hidden">
 
-      <div class="grid gap-3">
-        <input
-          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none transition-all focus:border-[rgba(40,247,255,0.44)]"
-          placeholder="Source Name" />
-        <input
-          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none transition-all focus:border-[rgba(40,247,255,0.44)]"
-          placeholder="Location" />
-        <input
-          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none transition-all focus:border-[rgba(40,247,255,0.44)]"
-          placeholder="RTSP URL" />
-        <label class="flex gap-2 items-center">
-          <input type="checkbox" checked />
-          Enable AI Detection
+      <header class="flex justify-between items-center px-6 py-4 border-b border-[#1f2937] bg-[#111827]">
+        <h2 class="text-lg font-bold text-white">Add CCTV Source</h2>
+        <button onclick="closeModal('cctvModal')" class="text-gray-400 hover:text-white transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+            class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="p-6 flex flex-col gap-4">
+        <!-- Source Name -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium text-gray-300 ml-1">Source Name</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                <path
+                  d="M3.25 4A2.25 2.25 0 001 6.25v7.5A2.25 2.25 0 003.25 16h7.5A2.25 2.25 0 0013 13.75v-7.5A2.25 2.25 0 0010.75 4h-7.5zM19 4.75a.75.75 0 00-1.28-.53l-3 3a.75.75 0 00-.22.53v4.5c0 .199.079.39.22.53l3 3a.75.75 0 001.28-.53V4.75z" />
+              </svg>
+            </div>
+            <input type="text" placeholder="e.g., North Warehouse Entrance"
+              class="w-full bg-[#172033] border border-[#2d3748] text-white rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium text-gray-300 ml-1">Location</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                <path fill-rule="evenodd"
+                  d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z"
+                  clip-rule="evenodd" />
+              </svg>
+            </div>
+            <input type="text" placeholder="e.g., Building 4, Floor 2"
+              class="w-full bg-[#172033] border border-[#2d3748] text-white rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+          </div>
+        </div>
+
+        <!-- RTSP URL -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex justify-between items-center ml-1">
+            <label class="text-xs font-medium text-gray-300">RTSP URL</label>
+            <span class="text-[10px] text-blue-500 font-bold tracking-wider uppercase">Required</span>
+          </div>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                <path
+                  d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
+                <path
+                  d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
+              </svg>
+            </div>
+            <input type="text" placeholder="rtsp://admin:pass@192.168.1.50:554/stream"
+              class="w-full bg-[#172033] border border-[#2d3748] text-white rounded-lg pl-9 pr-3 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+          </div>
+          <p class="text-[11px] text-gray-500 mt-1">The URL must be accessible by the AI processing server. Support for
+            H.264 and H.265 streams.</p>
+        </div>
+
+        <label class="flex items-center gap-2 cursor-pointer mt-2 group">
+          <input type="checkbox" checked
+            class="w-4 h-4 rounded border-[#374151] bg-[#1f2937] text-blue-500 focus:ring-blue-500 focus:ring-offset-[#111827]" />
+          <span class="text-sm font-medium text-white group-hover:text-blue-200 transition-colors">Enable AI Fire
+            Detection immediately</span>
         </label>
       </div>
 
-      <div class="flex justify-end gap-2.5">
-        <button
-          class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold"
-          onclick="closeModal('cctvModal')">Save</button>
-      </div>
+      <footer class="p-4 border-t border-[#1f2937] bg-[#141d2e] flex justify-end gap-3 mt-auto">
+        <button onclick="closeModal('cctvModal')"
+          class="px-5 py-2 text-sm font-medium text-white bg-[#1f2937] border border-[#374151] rounded-lg hover:bg-[#374151] transition-colors">Cancel</button>
+        <button onclick="closeModal('cctvModal')"
+          class="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition-colors shadow-[0_2px_10px_rgba(37,99,235,0.4)]">Save</button>
+      </footer>
     </div>
   </div>
 
   <!-- ADD VIDEO MODAL -->
-  <div class="fixed inset-0 bg-black/65 hidden items-center justify-center z-[1000]" id="videoModal">
+  <div class="fixed inset-0 modal-overlay hidden items-center justify-center z-[1000]" id="videoModal">
     <div
-      class="glass-panel glow-edge relative w-[min(420px,90%)] p-5 border border-[rgba(160,210,255,0.14)] rounded-2xl shadow-[0_18px_60px_rgba(0,0,0,0.55)] grid gap-3.5">
-      <div class="flex justify-between items-center">
-        <div class="font-orbitron text-xl font-semibold">Add Video Source</div>
-        <button
-          class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold transition-all"
-          onclick="closeModal('videoModal')">✕</button>
-      </div>
+      class="bg-[#111827] w-[min(480px,95%)] border border-[#1f2937] rounded-xl shadow-2xl flex flex-col overflow-hidden">
 
-      <div class="grid gap-3">
-        <input
-          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none transition-all focus:border-[rgba(40,247,255,0.44)]"
-          placeholder="Video Name" />
-        <input
-          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none transition-all focus:border-[rgba(40,247,255,0.44)]"
-          placeholder="Location" />
-        <input type="file"
-          class="w-full px-3 py-[11px] rounded-xl border border-[rgba(160,210,255,0.16)] bg-[rgba(5,8,14,0.55)] text-white outline-none" />
-      </div>
+      <header class="flex justify-between items-center px-6 py-4 border-b border-[#1f2937] bg-[#111827]">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 bg-blue-500/10 rounded flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor" class="w-4 h-4 text-blue-400">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </div>
+          <h2 class="text-lg font-bold text-white">Add Video Source</h2>
+        </div>
+        <button onclick="closeModal('videoModal')" class="text-gray-400 hover:text-white transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+            class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </header>
 
-      <div class="flex justify-end gap-2.5">
-        <button
-          class="px-3.5 py-2.5 rounded-xl border border-[rgba(40,247,255,0.22)] bg-gradient-to-b from-[rgba(40,247,255,0.14)] to-[rgba(40,247,255,0.06)] font-semibold"
-          onclick="closeModal('videoModal')">Upload</button>
-      </div>
+      <form action="/upload_video" method="POST" enctype="multipart/form-data" class="flex flex-col flex-1 min-h-0">
+        <div class="p-6 flex flex-col gap-4">
+          <!-- Video Name -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-gray-300 ml-1">Video Name</label>
+            <input type="text" name="video_name" placeholder="e.g., Warehouse Entrance A"
+              class="w-full bg-[#172033] border border-[#2d3748] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+          </div>
+
+          <!-- Location -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-gray-300 ml-1">Location</label>
+            <input type="text" placeholder="e.g., Sector 4 - North Wing"
+              class="w-full bg-[#172033] border border-[#2d3748] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+          </div>
+
+          <!-- Upload Dropzone -->
+          <div class="flex flex-col gap-1.5 mt-2">
+            <label class="text-xs font-medium text-gray-300 ml-1">Upload MP4 File</label>
+            <div
+              class="relative border-2 border-dashed border-[#374151] rounded-xl hover:bg-[#172033] transition-colors p-8 flex flex-col items-center justify-center text-center group cursor-pointer bg-[#0b1120]/50"
+              onclick="document.getElementById('videoFile').click()">
+              <input type="file" id="videoFile" name="video_file" accept="video/mp4,video/x-m4v,video/*" required
+                class="hidden" onchange="this.parentElement.querySelector('p').innerText = this.files[0].name" />
+              <div
+                class="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500 mb-3 group-hover:scale-110 transition-transform">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M17.5 9.25a5.5 5.5 0 00-11 0 4 4 0 00-3 7.5c1.1 1.1 2.5 1.75 4 1.75h10.5c2.48 0 4.5-2.02 4.5-4.5 0-2.31-1.76-4.22-4-4.48zM10 5.25v7.5M10 5.25l-2.25 2.25M10 5.25l2.25 2.25" />
+                </svg>
+              </div>
+              <p class="text-sm font-medium text-white mb-1">Click to upload or drag and drop</p>
+              <p class="text-xs text-gray-500">MP4 video format only (Max. 500MB)</p>
+            </div>
+          </div>
+        </div>
+
+        <footer class="p-4 border-t border-[#1f2937] bg-[#141d2e] flex justify-end gap-3 mt-auto">
+          <button type="button" onclick="closeModal('videoModal')"
+            class="px-5 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors border-0">Cancel</button>
+          <button type="submit"
+            class="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition-colors shadow-[0_2px_10px_rgba(37,99,235,0.4)] tracking-wide">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M17.5 9.25a5.5 5.5 0 00-11 0 4 4 0 00-3 7.5c1.1 1.1 2.5 1.75 4 1.75h10.5c2.48 0 4.5-2.02 4.5-4.5 0-2.31-1.76-4.22-4-4.48zM10 5.25v7.5M10 5.25l-2.25 2.25M10 5.25l2.25 2.25" />
+            </svg>
+            Upload
+          </button>
+        </footer>
+      </form>
     </div>
   </div>
 
+  <!-- DELETE CONFIRMATION MODAL -->
+  <div class="fixed inset-0 modal-overlay hidden items-center justify-center z-[1100]" id="deleteModal">
+    <div
+      class="bg-[#111827] w-[min(400px,95%)] border border-[#1f2937] rounded-xl shadow-2xl flex flex-col overflow-hidden transform transition-all">
+
+      <header class="flex justify-between items-center px-6 py-4 border-b border-[#1f2937] bg-[#111827]">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-red-500/10 rounded flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor" class="w-5 h-5 text-red-400">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 class="text-lg font-bold text-white">Delete Source</h2>
+        </div>
+        <button onclick="cancelDelete()" class="text-gray-400 hover:text-white transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+            class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="p-6">
+        <p class="text-sm text-gray-300">Are you sure you want to delete <span id="deleteSourceName"
+            class="font-bold text-white"></span>?</p>
+        <p class="text-xs text-gray-400 mt-2">This will permanently remove the source and halt all AI processing for
+          this feed immediately.</p>
+      </div>
+
+      <footer class="p-4 border-t border-[#1f2937] bg-[#141d2e] flex justify-end gap-3 mt-auto">
+        <button type="button" onclick="cancelDelete()"
+          class="px-5 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors border-0">Cancel</button>
+        <button type="button" onclick="executeDelete()"
+          class="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-500 transition-colors shadow-[0_2px_10px_rgba(220,38,38,0.3)] tracking-wide">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+            class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
+          Delete
+        </button>
+      </footer>
+    </div>
+  </div>
 </body>
 
 </html>
