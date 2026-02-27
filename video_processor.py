@@ -64,6 +64,7 @@ class VideoProcessor:
         self.conf_threshold = conf_threshold
         self.running = True
         self.lock = threading.Lock()
+        self.cap = None  # VideoCapture stored here so stop() can release the file lock
         
         self.model = None
         self.latest_result: Optional[Results] = None
@@ -214,10 +215,17 @@ class VideoProcessor:
             }
 
     def stop(self):
-        """Stops the inference thread."""
+        """Stops processing and releases the video file so Windows can delete it."""
         self.running = False
+        # Forcibly release the VideoCapture file handle immediately
+        if self.cap is not None:
+            try:
+                self.cap.release()
+            except Exception:
+                pass
+            self.cap = None
         if hasattr(self, 'inference_thread') and self.inference_thread.is_alive():
-            self.inference_thread.join(timeout=1.0)
+            self.inference_thread.join(timeout=2.0)
 
     def start_inference_thread(self):
         """Starts the inference thread if it's not already running."""
@@ -230,26 +238,25 @@ class VideoProcessor:
         self.inference_thread.start()
 
     def generate_frames(self):
-        cap = cv2.VideoCapture(str(self.video_path))
-        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        self.cap = cv2.VideoCapture(str(self.video_path))
+        fps = self.cap.get(cv2.CAP_PROP_FPS) or 30.0
         interval = 1.0 / fps
 
         if self.model:
             self.start_inference_thread()
 
         try:
-            while True:
+            while self.running:
                 start = time.time()
-                success, frame = cap.read()
+                success, frame = self.cap.read()
                 if not success:
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     continue
 
                 with self.lock:
                     self.current_frame = frame
                     result = self.latest_result
 
-                # Check if result is stale (optional optimization) or just plot whatever we have
                 output = result.plot(img=frame) if result else frame
                 
                 ret, buffer = cv2.imencode('.jpg', output, [cv2.IMWRITE_JPEG_QUALITY, 70])
@@ -261,7 +268,6 @@ class VideoProcessor:
                 if interval > elapsed:
                     time.sleep(interval - elapsed)
         finally:
-            # Do NOT stop the inference thread here. 
-            # It should keep running or be managed globally.
-            # self.running = False 
-            cap.release()
+            if self.cap is not None:
+                self.cap.release()
+                self.cap = None

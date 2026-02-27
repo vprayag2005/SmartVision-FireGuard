@@ -125,8 +125,23 @@ def upload_video():
             model_path=app.config['MODEL_PATH']
         )
         
-        return redirect(url_for('admin'))
-    return "Failed to upload video", 400
+        return {"ok": True}, 200
+    return {"ok": False}, 400
+
+import threading
+
+def _deferred_delete(file_path: Path, delay: float = 3.0):
+    """Delete a file after a delay so the video stream has time to close its handle."""
+    time.sleep(delay)
+    for attempt in range(5):
+        try:
+            if file_path.exists():
+                os.remove(file_path)
+            break
+        except PermissionError:
+            time.sleep(1.0)
+        except Exception:
+            break
 
 @app.route('/delete/<int:cam_id>', methods=['POST'])
 def delete_camera(cam_id):
@@ -144,31 +159,23 @@ def delete_camera(cam_id):
         c.execute('DELETE FROM cameras WHERE id = ?', (cam_id,))
         conn.commit()
         
-        # 3. If it was an uploaded video and it exists on disk, delete the physical file
+        # 3. If it was an uploaded video, stop processor and schedule file deletion
         if cam['type'] == 'Video':
             file_path = Path(cam['path'])
-            
-            # 4. Remove from running processor memory and STOP it first
+
+            # Stop processor — signals the stream generator to exit and releases self.cap
             if cam_id in processors:
                 try:
                     processors[cam_id].stop()
                     del processors[cam_id]
                 except Exception as e:
                     print(f"Error stopping processor: {e}")
-            
-            # Give Windows a split second to release the file handle
-            time.sleep(0.5)
-            
-            print(f"[DELETE] Attempting to remove: {file_path}")
-            print(f"[DELETE] File exists: {file_path.exists()}")
-            try:
-                if file_path.exists() and file_path.name != 'cctv_demo_detection.mp4':
-                    os.remove(file_path)
-                    print(f"[DELETE] Successfully deleted: {file_path}")
-                else:
-                    print(f"[DELETE] Skipped (not found or protected file)")
-            except Exception as e:
-                print(f"[DELETE] Error removing file: {e}")
+
+            # Delete in a background thread after a delay so the streaming
+            # HTTP connection has time to fully close and release the file handle
+            if file_path.name != 'cctv_demo_detection.mp4':
+                t = threading.Thread(target=_deferred_delete, args=(file_path,), daemon=True)
+                t.start()
                 
     conn.close()
     return redirect(url_for('admin'))

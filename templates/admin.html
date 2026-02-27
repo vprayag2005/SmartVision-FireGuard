@@ -322,7 +322,7 @@
     </div>
   </div>
 
-  <!-- ADD VIDEO MODAL -->
+  <!-- ADD VIDEO MODAL (original, untouched) -->
   <div class="fixed inset-0 modal-overlay hidden items-center justify-center z-[1000]" id="videoModal">
     <div
       class="bg-[#111827] w-[min(480px,95%)] border border-[#1f2937] rounded-xl shadow-2xl flex flex-col overflow-hidden">
@@ -345,7 +345,8 @@
         </button>
       </header>
 
-      <form action="/upload_video" method="POST" enctype="multipart/form-data" class="flex flex-col flex-1 min-h-0">
+      <form id="videoUploadForm" action="/upload_video" method="POST" enctype="multipart/form-data"
+        class="flex flex-col flex-1 min-h-0">
         <div class="p-6 flex flex-col gap-4">
           <!-- Video Name -->
           <div class="flex flex-col gap-1.5">
@@ -357,7 +358,7 @@
           <!-- Location -->
           <div class="flex flex-col gap-1.5">
             <label class="text-xs font-medium text-gray-300 ml-1">Location</label>
-            <input type="text" placeholder="e.g., Sector 4 - North Wing"
+            <input type="text" name="location" placeholder="e.g., Sector 4 - North Wing"
               class="w-full bg-[#172033] border border-[#2d3748] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
           </div>
 
@@ -395,6 +396,47 @@
           </button>
         </footer>
       </form>
+    </div>
+  </div>
+
+  <!-- UPLOAD PROGRESS DIALOG (shown during upload, replaces tab loading) -->
+  <div id="uploadProgressModal" class="fixed inset-0 flex items-center justify-center z-[2000] hidden"
+    style="background: rgba(5,7,12,0.75); backdrop-filter: blur(4px);">
+    <div class="bg-[#111827] border border-[#1f2937] rounded-2xl shadow-2xl w-[min(460px,92%)] p-7 flex flex-col gap-5">
+      <!-- Top row: icon + text -->
+      <div class="flex items-center gap-4">
+        <!-- Animated upload icon -->
+        <div class="w-12 h-12 rounded-full border-2 border-blue-500 flex items-center justify-center flex-shrink-0"
+          style="background: rgba(59,130,246,0.08)">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#3b82f6"
+            class="w-6 h-6" id="uploadIcon">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-white font-semibold text-lg leading-tight" id="uploadDialogTitle">Uploading...</p>
+          <p class="text-gray-400 text-sm mt-0.5">Just give us a moment to process your file.</p>
+        </div>
+      </div>
+
+      <!-- Progress bar + percentage -->
+      <div class="flex flex-col gap-2">
+        <div class="flex justify-between items-center">
+          <div class="flex-1 bg-[#1e293b] rounded-full h-2 overflow-hidden mr-4">
+            <div id="uploadBar" class="bg-blue-500 h-2 rounded-full transition-all duration-200" style="width: 0%">
+            </div>
+          </div>
+          <span id="uploadPct" class="text-gray-300 text-sm font-mono font-semibold w-10 text-right">0%</span>
+        </div>
+      </div>
+
+      <!-- Cancel button -->
+      <div class="flex justify-end">
+        <button id="uploadCancelBtn" onclick="cancelUpload()"
+          class="px-5 py-2 text-sm font-medium text-gray-300 bg-[#1e293b] hover:bg-[#334155] border border-[#334155] rounded-lg transition-colors">
+          Cancel
+        </button>
+      </div>
     </div>
   </div>
 
@@ -444,6 +486,82 @@
       </footer>
     </div>
   </div>
+
+  <!-- UPLOAD AJAX SCRIPT (at end of body so all elements exist) -->
+  <script>
+    let currentXhr = null;
+
+    function showUploadProgress() {
+      document.getElementById('uploadProgressModal').classList.remove('hidden');
+      document.getElementById('uploadBar').style.width = '0%';
+      document.getElementById('uploadPct').textContent = '0%';
+      document.getElementById('uploadDialogTitle').textContent = 'Uploading...';
+      document.getElementById('uploadCancelBtn').style.display = '';
+    }
+
+    function hideUploadProgress() {
+      document.getElementById('uploadProgressModal').classList.add('hidden');
+      currentXhr = null;
+    }
+
+    function cancelUpload() {
+      if (currentXhr) {
+        currentXhr.abort();
+        currentXhr = null;
+      }
+      hideUploadProgress();
+    }
+
+    document.getElementById('videoUploadForm').addEventListener('submit', function (e) {
+      e.preventDefault(); // stop tab navigation
+
+      const fileInput = document.getElementById('videoFile');
+      if (!fileInput.files[0]) return;
+
+      // Close the video modal and show progress dialog
+      closeModal('videoModal');
+      showUploadProgress();
+
+      const formData = new FormData(this);
+
+      const xhr = new XMLHttpRequest();
+      currentXhr = xhr;
+
+      // Live progress updates
+      xhr.upload.addEventListener('progress', function (event) {
+        if (event.lengthComputable) {
+          const pct = Math.round((event.loaded / event.total) * 100);
+          document.getElementById('uploadBar').style.width = pct + '%';
+          document.getElementById('uploadPct').textContent = pct + '%';
+        }
+      });
+
+      xhr.addEventListener('load', function () {
+        // Show "Done!" briefly then reload page to show new entry
+        document.getElementById('uploadDialogTitle').textContent = 'Upload Complete!';
+        document.getElementById('uploadBar').style.width = '100%';
+        document.getElementById('uploadPct').textContent = '100%';
+        document.getElementById('uploadBar').classList.replace('bg-blue-500', 'bg-green-500');
+        document.getElementById('uploadCancelBtn').style.display = 'none';
+        setTimeout(function () {
+          window.location.reload();
+        }, 1200);
+      });
+
+      xhr.addEventListener('error', function () {
+        hideUploadProgress();
+        alert('Upload failed. Please try again.');
+      });
+
+      xhr.addEventListener('abort', function () {
+        hideUploadProgress();
+      });
+
+      xhr.open('POST', '/upload_video');
+      xhr.send(formData);
+    });
+  </script>
+
 </body>
 
 </html>
