@@ -19,6 +19,7 @@ fi
 # --access-logfile/-error-logfile emit logs to stdout for App Service logs
 # app:app refers to app.py and the Flask 'app' object
 PORT_TO_USE="${PORT:-${WEBSITES_PORT:-8000}}"
+echo "Using PORT: ${PORT_TO_USE}"
 exec gunicorn --bind 0.0.0.0:${PORT_TO_USE} --timeout 600 --workers 1 \
   --access-logfile - --error-logfile - --capture-output --log-level info \
   app:app

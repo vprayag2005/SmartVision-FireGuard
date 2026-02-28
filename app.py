@@ -58,6 +58,10 @@ def get_db_connection() -> sqlite3.Connection:
 # Global video processors mapping
 processors = {}
 
+@app.route('/health')
+def health():
+    return {'status': 'ok'}, 200
+
 def get_processor(cam_id):
     if cam_id not in processors:
         conn = get_db_connection()
