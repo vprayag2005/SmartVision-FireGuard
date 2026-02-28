@@ -202,15 +202,16 @@
           {% if cameras %}
           {% for cam in cameras %}
           <article
-            class="{% if loop.index > 1 %}hidden {% endif %}bg-[#0b1120] rounded-lg border border-[#374151] overflow-hidden relative w-full flex flex-col shadow-inner shrink-0 md:shrink"
+            class="{% if loop.index > 1 %}hidden {% endif %}bg-[#0b1120] rounded-lg border border-[#374151] overflow-hidden relative w-full h-full flex flex-col shadow-inner shrink-0"
             data-camera="cam{{ cam.id }}" data-camera-name="{{ cam.name }}" aria-label="{{ cam.name }} camera alert">
 
             <!-- Video Container -->
-            <div class="w-full flex-1 min-h-[300px] flex items-center justify-center bg-black overflow-hidden"
-              role="img" aria-label="Video feed">
+            <div class="w-full flex-1 min-h-0 flex items-center justify-center bg-black overflow-hidden" role="img"
+              aria-label="Video feed">
               <img src="{{ url_for('video_feed', cam_id=cam.id) }}"
                 onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%\' height=\'100%\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><path d=\'M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a1.5 1.5 0 100-3 1.5 1.5 0 000 3z\' fill=\'%23374151\' transform=\'translate(460, 180) scale(4)\'/><text x=\'50%\' y=\'65%\' font-family=\'system-ui, sans-serif\' font-size=\'18\' font-weight=\'600\' fill=\'%236b7280\' text-anchor=\'middle\' dominant-baseline=\'middle\'>AWAITING VIDEO STREAM...</text></svg>'; this.onerror=null;"
-                class="w-full h-full max-h-full block object-contain object-center" alt="Live Camera Feed">
+                class="w-full h-full max-h-full block object-contain object-center" alt="Live Camera Feed"
+                style="max-height: 100%;">
             </div>
 
             <!-- Metrics bar at bottom of video -->
@@ -309,97 +310,254 @@
           </svg>
           TEMPORAL VERIFICATION
         </div>
-        <div class="text-xs text-gray-500 ml-auto">Detection persistence over 30-second rolling window</div>
+        <div class="text-xs text-gray-500 ml-auto hidden sm:block">Detection persistence over 30-second rolling window
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-        <!-- Detection Persistence -->
-        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] p-5">
-          <div class="flex items-center justify-between mb-3">
-            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Detection Persistence</div>
-            <div class="font-mono text-xs text-gray-500" id="persistenceLabel">0 / 30 seconds</div>
+        <!-- 1. Detection Persistence Block -->
+        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] overflow-hidden flex flex-col shadow-lg">
+          <div class="bg-gradient-to-r from-gray-800 to-gray-700 px-4 py-3 text-center border-b border-gray-600/30">
+            <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-300">
+              Detection<br>Persistence
+            </div>
           </div>
-          <div class="w-full bg-[#1f2937] rounded-full h-2.5 mb-3 overflow-hidden">
-            <div id="persistenceBarFire"
-              class="temporal-bar-fill h-2.5 rounded-full bg-gradient-to-r from-orange-600 to-red-500"
-              style="width: 0%"></div>
-          </div>
-          <div class="flex items-center justify-between">
-            <div class="text-[11px] text-gray-500 font-mono">Fire frames detected</div>
-            <div id="persistencePercent" class="text-sm font-bold font-mono text-red-400">0%</div>
-          </div>
-          <div class="mt-3 pt-3 border-t border-[#1f2937]">
-            <div class="text-[11px] text-gray-600 font-mono">Threshold: 10s continuous to confirm</div>
+          <div class="p-4 flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+              <div class="font-mono text-[10px] text-gray-500" id="persistenceLabel">0 / 30s</div>
+              <div id="persistencePercent" class="text-xs font-bold font-mono text-red-500">0%</div>
+            </div>
+            <div class="w-full bg-[#1f2937] rounded-full h-1.5 mb-6 overflow-hidden">
+              <div id="persistenceBarFire"
+                class="temporal-bar-fill h-1.5 rounded-full bg-gradient-to-r from-orange-600 to-red-500"
+                style="width: 0%"></div>
+            </div>
+            <div class="mt-auto pt-3 border-t border-[#1f2937]">
+              <div class="text-[9px] text-gray-600 font-mono leading-tight">Threshold: 10s continuous hits required
+                for confirmation</div>
+            </div>
           </div>
         </div>
 
-        <!-- Confidence Stability -->
-        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] p-5">
-          <div class="flex items-center justify-between mb-3">
-            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Confidence Stability</div>
-            <div id="stabilityBadge"
-              class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-gray-700 text-gray-400">
-              UNKNOWN
+        <!-- 2. Confidence Stability Block -->
+        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] overflow-hidden flex flex-col shadow-lg">
+          <div class="bg-gradient-to-r from-gray-800 to-gray-700 px-4 py-3 text-center border-b border-gray-600/30">
+            <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-300">
+              Confidence<br>Stability
             </div>
           </div>
-          <div class="w-full bg-[#1f2937] rounded-full h-2.5 mb-3 overflow-hidden">
-            <div id="stabilityBar"
-              class="temporal-bar-fill h-2.5 rounded-full bg-gradient-to-r from-yellow-500 to-green-400"
-              style="width: 0%"></div>
-          </div>
-          <div class="flex items-center justify-between">
-            <div class="text-[11px] text-gray-500 font-mono">Signal consistency</div>
-            <div id="stabilityPercent" class="text-sm font-bold font-mono text-emerald-400">—</div>
-          </div>
-          <div class="mt-3 pt-3 border-t border-[#1f2937]">
-            <div class="text-[11px] text-gray-600 font-mono">High stability = low variance in readings</div>
+          <div class="p-4 flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+              <div id="stabilityBadge" class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-gray-800 text-gray-500">
+                UNKNOWN</div>
+              <div id="stabilityPercent" class="text-xs font-bold font-mono text-emerald-400">—</div>
+            </div>
+            <div class="w-full bg-[#1f2937] rounded-full h-1.5 mb-6 overflow-hidden">
+              <div id="stabilityBar"
+                class="temporal-bar-fill h-1.5 rounded-full bg-gradient-to-r from-yellow-500 to-green-400"
+                style="width: 0%"></div>
+            </div>
+            <div class="mt-auto pt-3 border-t border-[#1f2937]">
+              <div class="text-[9px] text-gray-600 font-mono leading-tight">Measures variance in AI detection
+                confidence levels over time</div>
+            </div>
           </div>
         </div>
 
-        <!-- Spatial Growth Trend -->
-        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] p-5">
-          <div class="flex items-center justify-between mb-3">
-            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Spatial Growth</div>
-            <div id="spatialTrendBadge"
-              class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-gray-700 text-gray-400">
-              MONITORING
+        <!-- 3. Spatial Growth Block -->
+        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] overflow-hidden flex flex-col shadow-lg">
+          <div class="bg-gradient-to-r from-gray-800 to-gray-700 px-4 py-3 text-center border-b border-gray-600/30">
+            <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-300">
+              Spatial Growth<br>Trend
             </div>
           </div>
-          <div class="flex items-center justify-center my-4">
-            <div id="spatialTrendIcon" class="text-5xl select-none" style="transition: all 0.5s;">📊</div>
-          </div>
-          <div class="text-center">
-            <div id="spatialTrendLabel" class="text-sm font-bold font-mono text-gray-400">Awaiting data...</div>
-            <div class="text-[11px] text-gray-600 font-mono mt-1">Fire region area comparison</div>
+          <div class="p-4 flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-2">
+              <div id="spatialTrendBadge"
+                class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-gray-800 text-gray-500 uppercase">Monitoring
+              </div>
+              <div id="spatialTrendIcon" class="text-xl">📊</div>
+            </div>
+            <div class="flex-1 flex flex-col justify-center text-center py-2">
+              <div id="spatialTrendLabel" class="text-[11px] font-bold font-mono text-gray-500">Awaiting data...</div>
+            </div>
+            <div class="mt-auto pt-3 border-t border-[#1f2937]">
+              <div class="text-[9px] text-gray-600 font-mono leading-tight">Comparison of fire region area across
+                temporal samples</div>
+            </div>
           </div>
         </div>
 
-        <!-- Temporal Risk Scoring (TRS) -->
-        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] p-5">
-          <div class="flex items-center justify-between mb-3">
-            <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Temporal Risk Score</div>
-          </div>
-          <div class="flex items-center justify-center my-4">
-            <div id="trsScore" class="text-5xl font-black font-mono tracking-tighter"
-              style="color: #9ca3af; transition: color 0.5s;">
-              0.0
+        <!-- 4. Temporal Risk Score Block -->
+        <div class="bg-[#0b1120] rounded-xl border border-[#1f2937] overflow-hidden flex flex-col shadow-lg">
+          <div class="bg-gradient-to-r from-gray-800 to-gray-700 px-4 py-3 text-center border-b border-gray-600/30">
+            <div class="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-300">
+              Temporal Risk<br>Score (TRS)
             </div>
           </div>
-          <div class="text-center mt-auto">
-            <div class="text-[11px] text-gray-600 font-mono">TRS = w₁P + w₂C + w₃G</div>
+          <div class="p-4 flex-1 flex flex-col">
+            <div class="flex-1 flex items-center justify-center py-2">
+              <div id="trsScore"
+                class="text-4xl font-black font-mono tracking-tighter text-gray-600 transition-all duration-500">0.0
+              </div>
+            </div>
+            <div class="mt-auto pt-3 border-t border-[#1f2937] text-center">
+              <div class="text-[8px] text-gray-600 font-mono">TRS = w₁P + w₂C + w₃G</div>
+            </div>
           </div>
         </div>
 
       </div>
     </section>
 
+    <!-- Temporal Hysteresis Control Section (Premium UI) -->
+    <section class="mt-6 bg-[#0a0f1c] border border-[#1e293b] rounded-lg shadow-2xl overflow-hidden"
+      aria-label="System Logic: Hysteresis Control">
+      <div class="p-6">
+        <div class="mb-5">
+          <h2 class="text-[13px] font-extrabold text-[#f1f5f9] uppercase tracking-[0.15em] flex items-center gap-2">
+            <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z">
+              </path>
+            </svg>
+            SYSTEM LOGIC: TEMPORAL HYSTERESIS CONTROL
+          </h2>
+          <p class="text-[10px] text-[#64748b] mt-1.5 uppercase tracking-wider font-semibold">
+            STATE-MACHINE VERIFICATION PREVENTS FALSE AND FLICKERING ALERTS. TRIGGERS EMERGENCY SEQUENCE ONLY WHEN
+            THRESHOLD IS VERIFIED.
+          </p>
+        </div>
+
+        <div class="border-t border-[#1e293b] pt-5 flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
+
+          <div class="flex items-center gap-5 w-full md:w-[40%]">
+            <div class="w-12 h-12 rounded-full border border-[#334155] flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-[#64748b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] text-[#475569] font-bold uppercase tracking-wider mb-1.5">CURRENT STATE</span>
+              <span id="hysteresisStatusBadge" class="text-[11px] font-black tracking-widest text-[#64748b] uppercase">
+                FILTERING
+              </span>
+            </div>
+          </div>
+
+          <div class="hidden md:block w-px h-10 bg-[#1e293b] shrink-0"></div>
+
+          <div class="flex flex-col flex-1 pl-0 md:pl-4">
+            <span class="text-[10px] text-[#475569] font-bold uppercase tracking-wider mb-1.5">PROCESS DETAIL</span>
+            <span id="hysteresisStatusDetail" class="text-xs font-mono text-[#64748b] italic">
+              Analyzing signal persistence...
+            </span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Threat Severity Matrix -->
+    <section class="mt-8 bg-[#0b1120] border border-[#1f2937] rounded-2xl shadow-2xl overflow-hidden relative"
+      aria-label="Fire Severity Classification Flow">
+      <!-- Glow effect -->
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-4/5 h-32 bg-blue-600/5 blur-[100px] pointer-events-none">
+      </div>
+
+      <div class="p-6 md:p-8 relative z-10">
+        <div
+          class="flex flex-col md:flex-row md:items-center justify-between border-b border-[#1f2937] pb-5 mb-8 gap-4">
+          <div>
+            <h2 class="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
+              <span class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]"></span>
+              Threat Severity Matrix
+            </h2>
+            <p class="text-[11px] text-[#64748b] mt-1.5 uppercase tracking-wider font-semibold">
+              Real-time structural hazard classification based on inference and temporal persistence
+            </p>
+          </div>
+          <div class="flex items-center gap-3 px-3 py-1.5 bg-[#111827] rounded-lg border border-[#1f2937]">
+            <div class="flex items-center gap-1.5">
+              <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-[pulse-dot_1.5s_ease-out_infinite]"></div>
+              <span class="text-[10px] font-mono text-gray-400 uppercase tracking-widest">Active Monitoring</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="severityCardsContainer">
+
+          <!-- Level 0 -->
+          <div id="sevCard-none"
+            class="relative rounded-xl border border-[#1f2937] bg-[#111827] p-5 transition-all duration-500 ease-out hidden md:flex flex-col h-full opacity-40 scale-95 z-0 sev-card-inactive">
+            <div class="flex items-center justify-between mb-4">
+              <div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-600 sev-label">Level 0</div>
+              <svg class="w-5 h-5 text-gray-700 sev-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-500 tracking-wide sev-title">No Threat</h3>
+            <p class="text-[11px] text-gray-600 mt-2 font-medium leading-relaxed sev-desc">System operating nominally.
+              Background noise filtered.</p>
+          </div>
+
+          <!-- Level 1 -->
+          <div id="sevCard-low"
+            class="relative rounded-xl border border-[#1f2937] bg-[#111827] p-5 transition-all duration-500 ease-out hidden md:flex flex-col h-full opacity-40 scale-95 z-0 sev-card-inactive">
+            <div class="flex items-center justify-between mb-4">
+              <div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-600 sev-label">Level 1</div>
+              <svg class="w-5 h-5 text-gray-700 sev-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-500 tracking-wide sev-title">Low Risk</h3>
+            <p class="text-[11px] text-gray-600 mt-2 font-medium leading-relaxed sev-desc">Initial signal detected.
+              Verifying stability and persistence.</p>
+          </div>
+
+          <!-- Level 2 -->
+          <div id="sevCard-medium"
+            class="relative rounded-xl border border-[#1f2937] bg-[#111827] p-5 transition-all duration-500 ease-out hidden md:flex flex-col h-full opacity-40 scale-95 z-0 sev-card-inactive">
+            <div class="flex items-center justify-between mb-4">
+              <div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-600 sev-label">Level 2</div>
+              <svg class="w-5 h-5 text-gray-700 sev-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-500 tracking-wide sev-title">Medium Risk</h3>
+            <p class="text-[11px] text-gray-600 mt-2 font-medium leading-relaxed sev-desc">Persistent hazard identified.
+              Pre-alert stage active.</p>
+          </div>
+
+          <!-- Level 3 -->
+          <div id="sevCard-high"
+            class="relative rounded-xl border border-[#1f2937] bg-[#111827] p-5 transition-all duration-500 ease-out hidden md:flex flex-col h-full opacity-40 scale-95 z-0 sev-card-inactive">
+            <div class="flex items-center justify-between mb-4">
+              <div class="text-[10px] font-black uppercase tracking-[0.15em] text-gray-600 sev-label">Level 3</div>
+              <svg class="w-5 h-5 text-gray-700 sev-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-500 tracking-wide sev-title">High Risk</h3>
+            <p class="text-[11px] text-gray-600 mt-2 font-medium leading-relaxed sev-desc">Confirmed structural fire.
+              Emergency protocols deployed.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
     <!-- Footer -->
-    <footer class="mt-8 border-t border-[#1f2937] pt-6 pb-6 md:pb-2" data-testid="footer-monitoring">
+    <footer class="mt-8 border-t border-[#1f2937] py-6" data-testid="footer-monitoring">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <!-- Brand/Logo Side -->
         <div class="flex items-center justify-center md:justify-start w-full md:w-auto">
-          <div class="flex flex-col md:flex-row items-center gap-2 md:gap-3">
+          <div class="flex flex-col md:flex-row items-center gap-3">
             <div class="w-8 h-8 md:w-6 md:h-6 bg-blue-600 rounded flex items-center justify-center text-white shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-3 md:h-3" viewBox="0 0 24 24"
                 fill="currentColor">
@@ -416,370 +574,503 @@
         </div>
 
         <div class="flex flex-wrap items-center justify-center mt-4 md:mt-0 gap-6">
-          <a href="#" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Privacy</a>
-          <a href="#" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Terms</a>
-          <a href="#" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Documentation</a>
+          <a href="/privacy" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Privacy</a>
+          <a href="/terms" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Terms</a>
+          <button onclick="openDeleteModal()"
+            class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Delete Account</button>
           <span
-            class="px-2 py-1 bg-[#1f2937] border border-[#374151] rounded text-[10px] font-bold text-gray-300 tracking-wide">v2.4.0</span>
+            class="px-2 py-1 bg-[#1f2937] border border-[#374151] rounded text-[10px] font-bold text-gray-300 tracking-wide">v1.0.0</span>
         </div>
       </div>
     </footer>
   </main>
 
+  <!-- DELETE ACCOUNT MODAL -->
+  <div id="deleteAccountModal" class="fixed inset-0 z-[2000] hidden items-center justify-center"
+    style="background:rgba(5,7,12,0.80);backdrop-filter:blur(6px);">
+    <div class="bg-[#111827] border border-red-900/50 rounded-2xl shadow-2xl w-[min(420px,92%)] overflow-hidden">
+
+      <!-- Header -->
+      <div class="flex items-center gap-3 px-6 py-4 border-b border-[#1f2937]">
+        <div class="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24"
+            stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-white">Delete Account</h2>
+          <p class="text-xs text-gray-500">This action is permanent and cannot be undone</p>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="px-6 py-5">
+        <div class="bg-red-950/30 border border-red-900/40 rounded-xl p-4 mb-5">
+          <p class="text-sm text-red-300 font-medium mb-1">⚠ Warning</p>
+          <p class="text-xs text-red-400/80 leading-relaxed">Deleting your account will permanently remove all your data
+            and access. An OTP will be sent to your registered email to confirm.</p>
+        </div>
+        <p class="text-sm text-gray-300">Are you sure you want to proceed?</p>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 pb-5 flex gap-3 justify-end">
+        <button onclick="closeDeleteModal()"
+          class="px-5 py-2 text-sm font-medium text-gray-300 bg-[#1e293b] hover:bg-[#334155] border border-[#334155] rounded-lg transition-colors">
+          Cancel
+        </button>
+        <form action="/delete_account" method="POST">
+          <button type="submit"
+            class="px-5 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-[0_2px_12px_rgba(220,38,38,0.3)] flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+            </svg>
+            Send OTP & Confirm
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openDeleteModal() {
+      const m = document.getElementById('deleteAccountModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+    function closeDeleteModal() {
+      const m = document.getElementById('deleteAccountModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+    // Close on backdrop click
+    document.getElementById('deleteAccountModal').addEventListener('click', function (e) {
+      if (e.target === this) closeDeleteModal();
+    });
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-      (function () {
-        const selector = document.getElementById('cameraSelector');
-        const log = document.querySelector('[data-testid="log-body"]');
-        const fireAlarm = document.getElementById('fireAlarm');
-        const overlay = document.getElementById('fireAlertOverlay');
+    (function () {
+      const selector = document.getElementById('cameraSelector');
+      const log = document.querySelector('[data-testid="log-body"]');
+      const fireAlarm = document.getElementById('fireAlarm');
+      const overlay = document.getElementById('fireAlertOverlay');
 
-        let alertActive = false;
-        let previousFireConfirmed = false;
-        let audioUnlocked = false;
-        const mainEl = document.getElementById('mainContent');
+      let alertActive = false;
+      let previousFireConfirmed = false;
+      let audioUnlocked = false;
+      const mainEl = document.getElementById('mainContent');
 
-        const activateBtn = document.getElementById('activateBtn');
-        const activationGate = document.getElementById('activationGate');
+      const activateBtn = document.getElementById('activateBtn');
+      const activationGate = document.getElementById('activationGate');
 
-        activateBtn.addEventListener('click', function () {
-          fireAlarm.play().then(() => {
-            fireAlarm.pause();
-            fireAlarm.currentTime = 0;
-            audioUnlocked = true;
-          }).catch(() => {
-            audioUnlocked = true;
-          });
-          activationGate.style.display = 'none';
-        });
-
-        function getActiveCameraName() {
-          const selected = selector ? selector.options[selector.selectedIndex] : null;
-          if (!selected) return 'Unknown Camera';
-          return selected.text.split('•')[0].trim();
-        }
-
-        function showAlert(cameraName) {
-          alertActive = true;
-          overlay.classList.remove('hidden');
-          overlay.classList.add('flex');
-          if (mainEl) mainEl.style.paddingTop = (overlay.offsetHeight + 24) + 'px';
-          document.getElementById('alertCameraName').textContent = cameraName;
-          document.getElementById('alertTimestamp').textContent = 'Since ' + new Date().toLocaleTimeString();
-          if (audioUnlocked) {
-            fireAlarm.currentTime = 0;
-            fireAlarm.play().catch(() => { });
-          } else {
-            audioUnlocked = false;
-          }
-        }
-
-        function hideAlert() {
-          alertActive = false;
-          overlay.classList.add('hidden');
-          overlay.classList.remove('flex');
-          if (mainEl) mainEl.style.paddingTop = '';
+      activateBtn.addEventListener('click', function () {
+        fireAlarm.play().then(() => {
           fireAlarm.pause();
           fireAlarm.currentTime = 0;
+          audioUnlocked = true;
+        }).catch(() => {
+          audioUnlocked = true;
+        });
+        activationGate.style.display = 'none';
+      });
+
+      function getActiveCameraName() {
+        const selected = selector ? selector.options[selector.selectedIndex] : null;
+        if (!selected) return 'Unknown Camera';
+        return selected.text.split('•')[0].trim();
+      }
+
+      function showAlert(cameraName) {
+        alertActive = true;
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        if (mainEl) mainEl.style.paddingTop = (overlay.offsetHeight + 24) + 'px';
+        document.getElementById('alertCameraName').textContent = cameraName;
+        document.getElementById('alertTimestamp').textContent = 'Since ' + new Date().toLocaleTimeString();
+        if (audioUnlocked) {
+          fireAlarm.currentTime = 0;
+          fireAlarm.play().catch(() => { });
+        } else {
+          audioUnlocked = false;
+        }
+      }
+
+      function hideAlert() {
+        alertActive = false;
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+        if (mainEl) mainEl.style.paddingTop = '';
+        fireAlarm.pause();
+        fireAlarm.currentTime = 0;
+      }
+
+      function showCamera(camId) {
+        document.querySelectorAll('[data-camera]').forEach(el => el.classList.add('hidden'));
+        const selected = document.querySelector('[data-camera="' + camId + '"]');
+        if (selected) selected.classList.remove('hidden');
+      }
+
+      if (selector) {
+        selector.addEventListener('change', function () {
+          sessionStorage.setItem('activeCamId', this.value);
+          showCamera(this.value);
+          if (typeof updateStats === 'function') updateStats();
+        });
+
+        const savedCam = sessionStorage.getItem('activeCamId');
+        if (savedCam && document.querySelector(`[value="${savedCam}"]`)) {
+          selector.value = savedCam;
         }
 
-        function showCamera(camId) {
-          document.querySelectorAll('[data-camera]').forEach(el => el.classList.add('hidden'));
-          const selected = document.querySelector('[data-camera="' + camId + '"]');
-          if (selected) selected.classList.remove('hidden');
-        }
+        if (selector.value) showCamera(selector.value);
+      }
 
-        if (selector) {
-          selector.addEventListener('change', function () {
-            sessionStorage.setItem('activeCamId', this.value);
-            showCamera(this.value);
-            if (typeof updateStats === 'function') updateStats();
-          });
+      if (log) log.scrollTop = 0;
 
-          const savedCam = sessionStorage.getItem('activeCamId');
-          if (savedCam && document.querySelector(`[value="${savedCam}"]`)) {
-            selector.value = savedCam;
-          }
+      const ctx = document.getElementById('growthChart').getContext('2d');
+      const isMobile = window.innerWidth < 768;
 
-          if (selector.value) showCamera(selector.value);
-        }
-
-        if (log) log.scrollTop = 0;
-
-        const ctx = document.getElementById('growthChart').getContext('2d');
-        const isMobile = window.innerWidth < 768;
-
-        const growthChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: [],
-            datasets: [
-              {
-                label: 'Fire Area (%)',
-                data: [],
-                borderColor: '#ff3b3b',
-                backgroundColor: '#070b14',
-                pointBorderColor: '#ff3b3b',
-                pointBackgroundColor: '#070b14',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                borderWidth: 3,
-                tension: 0.3,
-                fill: false
-              },
-              {
-                label: 'Smoke Area (%)',
-                data: [],
-                borderColor: '#00e6ff',
-                backgroundColor: '#070b14',
-                pointBorderColor: '#00e6ff',
-                pointBackgroundColor: '#070b14',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                borderWidth: 3,
-                tension: 0.3,
-                fill: false
+      const growthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Fire Area (%)',
+              data: [],
+              borderColor: '#ff3b3b',
+              backgroundColor: '#070b14',
+              pointBorderColor: '#ff3b3b',
+              pointBackgroundColor: '#070b14',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              borderWidth: 3,
+              tension: 0.3,
+              fill: false
+            },
+            {
+              label: 'Smoke Area (%)',
+              data: [],
+              borderColor: '#00e6ff',
+              backgroundColor: '#070b14',
+              pointBorderColor: '#00e6ff',
+              pointBackgroundColor: '#070b14',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              borderWidth: 3,
+              tension: 0.3,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: 'rgba(186, 205, 232, 0.72)',
+                font: { family: 'ui-monospace, monospace', size: 10 },
+                usePointStyle: true,
+                pointStyle: 'circle'
               }
-            ]
+            },
+            tooltip: {
+              backgroundColor: 'rgba(10, 18, 36, 0.95)',
+              titleColor: '#fff',
+              bodyColor: '#ccc',
+              borderColor: 'rgba(120, 170, 255, 0.2)',
+              borderWidth: 1,
+              padding: 10,
+              displayColors: true,
+              usePointStyle: true
+            }
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                labels: {
-                  color: 'rgba(186, 205, 232, 0.72)',
-                  font: { family: 'ui-monospace, monospace', size: 10 },
-                  usePointStyle: true,
-                  pointStyle: 'circle'
-                }
+          scales: {
+            x: {
+              grid: { color: 'rgba(120, 170, 255, 0.08)' },
+              ticks: {
+                color: 'rgba(186, 205, 232, 0.6)',
+                font: { size: 10, family: 'monospace' },
+                maxRotation: 45,
+                minRotation: 45,
+                maxTicksLimit: isMobile ? 6 : 12
               },
-              tooltip: {
-                backgroundColor: 'rgba(10, 18, 36, 0.95)',
-                titleColor: '#fff',
-                bodyColor: '#ccc',
-                borderColor: 'rgba(120, 170, 255, 0.2)',
-                borderWidth: 1,
-                padding: 10,
-                displayColors: true,
-                usePointStyle: true
-              }
+              border: { display: true, color: 'rgba(120, 170, 255, 0.2)' }
             },
-            scales: {
-              x: {
-                grid: { color: 'rgba(120, 170, 255, 0.08)' },
-                ticks: {
-                  color: 'rgba(186, 205, 232, 0.6)',
-                  font: { size: 10, family: 'monospace' },
-                  maxRotation: 45,
-                  minRotation: 45,
-                  maxTicksLimit: isMobile ? 6 : 12
-                },
-                border: { display: true, color: 'rgba(120, 170, 255, 0.2)' }
-              },
-              y: {
-                beginAtZero: true,
-                max: 100,
-                grid: { color: 'rgba(120, 170, 255, 0.08)' },
-                ticks: { color: 'rgba(186, 205, 232, 0.6)', font: { size: 10, family: 'monospace' }, stepSize: 20 },
-                border: { display: true, color: 'rgba(120, 170, 255, 0.2)' }
-              }
-            },
-            animation: { duration: 750, easing: 'easeOutQuart' }
+            y: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: 'rgba(120, 170, 255, 0.08)' },
+              ticks: { color: 'rgba(186, 205, 232, 0.6)', font: { size: 10, family: 'monospace' }, stepSize: 20 },
+              border: { display: true, color: 'rgba(120, 170, 255, 0.2)' }
+            }
+          },
+          animation: { duration: 750, easing: 'easeOutQuart' }
+        }
+      });
+
+      function updateTemporalPanel(temporal) {
+        if (!temporal) return;
+
+        const firePersistence = temporal.fire_persistence || 0;
+        const isConfirmed = temporal.fire_confirmed || false;
+
+        // Show the raw count out of the 30s window.
+        const target = 30;
+        const percent = Math.round((firePersistence / target) * 100);
+
+        const stability = temporal.fire_confidence_stability || 0;
+        const stabilityPct = Math.round(stability * 100);
+        const trend = temporal.spatial_trend || 'stable';
+
+        document.getElementById('persistenceLabel').textContent = `${firePersistence} / ${target} seconds`;
+
+        let barEl = document.getElementById('persistenceBarFire');
+
+        if (isConfirmed) {
+          barEl.style.background = '#ef4444'; // bg-red-500
+          barEl.style.boxShadow = '0 0 10px rgba(239,68,68,0.5)';
+          document.getElementById('persistencePercent').textContent = 'CONFIRMED';
+        } else {
+          barEl.style.background = 'linear-gradient(to right, #ea580c, #ef4444)'; // orange-600 to red-500
+          barEl.style.boxShadow = 'none';
+          document.getElementById('persistencePercent').textContent = percent + '%';
+        }
+
+        barEl.style.width = percent + '%';
+
+        document.getElementById('stabilityBar').style.width = stabilityPct + '%';
+        document.getElementById('stabilityPercent').textContent = stabilityPct + '%';
+
+        const stabilityBadge = document.getElementById('stabilityBadge');
+        if (stabilityPct >= 75) {
+          stabilityBadge.textContent = 'STABLE';
+          stabilityBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-green-500/20 text-green-400';
+        } else if (stabilityPct >= 40) {
+          stabilityBadge.textContent = 'MODERATE';
+          stabilityBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-yellow-500/20 text-yellow-400';
+        } else {
+          stabilityBadge.textContent = 'UNSTABLE';
+          stabilityBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-red-500/20 text-red-400';
+        }
+
+        const trendIcon = document.getElementById('spatialTrendIcon');
+        const trendLabel = document.getElementById('spatialTrendLabel');
+        const trendBadge = document.getElementById('spatialTrendBadge');
+        if (trend === 'growing') {
+          trendIcon.textContent = '📈';
+          trendLabel.textContent = 'GROWING — Fire spreading';
+          trendLabel.className = 'text-sm font-bold font-mono text-red-400';
+          trendBadge.textContent = 'GROWING';
+          trendBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-red-500/20 text-red-400';
+        } else if (trend === 'shrinking') {
+          trendIcon.textContent = '📉';
+          trendLabel.textContent = 'SHRINKING — Fire reducing';
+          trendLabel.className = 'text-sm font-bold font-mono text-green-400';
+        } else {
+          trendIcon.textContent = '➡️';
+          trendLabel.textContent = 'STABLE — No significant change';
+          trendLabel.className = 'text-sm font-bold font-mono text-blue-400';
+          trendBadge.textContent = 'STABLE';
+          trendBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-blue-500/20 text-blue-400';
+        }
+
+        // Update TRS (Temporal Risk Score)
+        if (temporal.risk_score !== undefined) {
+          const trs = temporal.risk_score;
+          const trsEl = document.getElementById('trsScore');
+
+          trsEl.textContent = trs.toFixed(1);
+
+          if (trs >= 75) {
+            trsEl.style.color = '#ef4444'; // red-500
+            trsEl.style.textShadow = '0 0 20px rgba(239,68,68,0.5)';
+          } else if (trs >= 40) {
+            trsEl.style.color = '#f59e0b'; // amber-500
+            trsEl.style.textShadow = '0 0 10px rgba(245,158,11,0.3)';
+          } else if (trs > 0) {
+            trsEl.style.color = '#3b82f6'; // blue-500
+            trsEl.style.textShadow = 'none';
+          } else {
+            trsEl.style.color = '#9ca3af'; // gray-400
+            trsEl.style.textShadow = 'none';
+          }
+        }
+
+        // Update Fire Severity Classification
+        const trsScoreValue = temporal.risk_score || 0;
+        let activeSeverity = 'none';
+        if (isConfirmed || trsScoreValue >= 75) activeSeverity = 'high';
+        else if (trsScoreValue >= 40) activeSeverity = 'medium';
+        else if (trsScoreValue > 0 || firePersistence > 0) activeSeverity = 'low';
+
+        const severitiesConfigs = {
+          'none': { color: 'green', bg: 'bg-green-500/10', border: 'border-green-500/50', text: 'text-green-400', icon: 'text-green-500', shadow: 'shadow-[0_0_30px_rgba(34,197,94,0.15)]' },
+          'low': { color: 'yellow', bg: 'bg-yellow-500/10', border: 'border-yellow-500/50', text: 'text-yellow-400', icon: 'text-yellow-500', shadow: 'shadow-[0_0_30px_rgba(234,179,8,0.15)]' },
+          'medium': { color: 'orange', bg: 'bg-orange-500/10', border: 'border-orange-500/50', text: 'text-orange-400', icon: 'text-orange-500', shadow: 'shadow-[0_0_30px_rgba(249,115,22,0.15)]' },
+          'high': { color: 'red', bg: 'bg-red-500/10', border: 'border-red-500/60', text: 'text-red-400', icon: 'text-red-500', shadow: 'shadow-[0_0_40px_rgba(239,68,68,0.3)]' }
+        };
+
+        Object.keys(severitiesConfigs).forEach(sev => {
+          const el = document.getElementById('sevCard-' + sev);
+          if (!el) return;
+          const config = severitiesConfigs[sev];
+
+          const label = el.querySelector('.sev-label');
+          const icon = el.querySelector('.sev-icon');
+          const title = el.querySelector('.sev-title');
+          const desc = el.querySelector('.sev-desc');
+
+          if (sev === activeSeverity) {
+            // Active state
+            el.className = `relative rounded-xl border ${config.border} ${config.bg} p-5 transition-all duration-300 ease-out flex flex-col h-full transform scale-105 z-10 ${config.shadow}`;
+            label.className = `text-[10px] font-black uppercase tracking-[0.15em] ${config.icon} sev-label`;
+            icon.className = `w-5 h-5 ${config.icon} sev-icon animate-pulse`;
+            title.className = `text-lg font-bold ${config.text} tracking-wide sev-title`;
+            desc.className = `text-[11px] ${config.text} opacity-90 mt-2 font-medium leading-relaxed sev-desc`;
+          } else {
+            // Inactive state
+            el.className = 'relative rounded-xl border border-[#1f2937] bg-[#111827] p-5 transition-all duration-300 ease-out hidden md:flex flex-col h-full opacity-40 scale-95 z-0 sev-card-inactive';
+            label.className = 'text-[10px] font-black uppercase tracking-[0.15em] text-gray-600 sev-label';
+            icon.className = 'w-5 h-5 text-gray-700 sev-icon';
+            title.className = 'text-lg font-bold text-gray-500 tracking-wide sev-title';
+            desc.className = 'text-[11px] text-gray-600 mt-2 font-medium leading-relaxed sev-desc';
           }
         });
 
-        function updateTemporalPanel(temporal) {
-          if (!temporal) return;
+        // Update Hysteresis Control Status
+        const hBadge = document.getElementById('hysteresisStatusBadge');
+        const hDetail = document.getElementById('hysteresisStatusDetail');
 
-          const firePersistence = temporal.fire_persistence || 0;
-          const isConfirmed = temporal.fire_confirmed || false;
-
-          // Show the raw count out of the 30s window.
-          const target = 30;
-          const percent = Math.round((firePersistence / target) * 100);
-
-          const stability = temporal.fire_confidence_stability || 0;
-          const stabilityPct = Math.round(stability * 100);
-          const trend = temporal.spatial_trend || 'stable';
-
-          document.getElementById('persistenceLabel').textContent = `${firePersistence} / ${target} seconds`;
-
-          let barEl = document.getElementById('persistenceBarFire');
-
+        if (hBadge && hDetail) {
           if (isConfirmed) {
-            barEl.style.background = '#ef4444'; // bg-red-500
-            barEl.style.boxShadow = '0 0 10px rgba(239,68,68,0.5)';
-            document.getElementById('persistencePercent').textContent = 'CONFIRMED';
+            hBadge.textContent = 'ALERT CONFIRMED';
+            hBadge.className = 'text-[11px] font-black tracking-widest text-[#f8fafc] uppercase animate-pulse';
+            hDetail.textContent = 'Emergency sequence active';
+            hDetail.className = 'text-xs font-mono text-[#f8fafc] italic';
+          } else if (firePersistence > 0) {
+            hBadge.textContent = 'STABILIZING';
+            hBadge.className = 'text-[11px] font-black tracking-widest text-[#cbd5e1] uppercase';
+            hDetail.textContent = 'Verifying signal authenticity...';
+            hDetail.className = 'text-xs font-mono text-[#94a3b8] italic';
           } else {
-            barEl.style.background = 'linear-gradient(to right, #ea580c, #ef4444)'; // orange-600 to red-500
-            barEl.style.boxShadow = 'none';
-            document.getElementById('persistencePercent').textContent = percent + '%';
+            hBadge.textContent = 'FILTERING';
+            hBadge.className = 'text-[11px] font-black tracking-widest text-[#64748b] uppercase';
+            hDetail.textContent = 'Analyzing signal persistence...';
+            hDetail.className = 'text-xs font-mono text-[#64748b] italic';
           }
-
-          barEl.style.width = percent + '%';
-
-          document.getElementById('stabilityBar').style.width = stabilityPct + '%';
-          document.getElementById('stabilityPercent').textContent = stabilityPct + '%';
-
-          const stabilityBadge = document.getElementById('stabilityBadge');
-          if (stabilityPct >= 75) {
-            stabilityBadge.textContent = 'STABLE';
-            stabilityBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-green-500/20 text-green-400';
-          } else if (stabilityPct >= 40) {
-            stabilityBadge.textContent = 'MODERATE';
-            stabilityBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-yellow-500/20 text-yellow-400';
-          } else {
-            stabilityBadge.textContent = 'UNSTABLE';
-            stabilityBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-red-500/20 text-red-400';
-          }
-
-          const trendIcon = document.getElementById('spatialTrendIcon');
-          const trendLabel = document.getElementById('spatialTrendLabel');
-          const trendBadge = document.getElementById('spatialTrendBadge');
-          if (trend === 'growing') {
-            trendIcon.textContent = '📈';
-            trendLabel.textContent = 'GROWING — Fire spreading';
-            trendLabel.className = 'text-sm font-bold font-mono text-red-400';
-            trendBadge.textContent = 'GROWING';
-            trendBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-red-500/20 text-red-400';
-          } else if (trend === 'shrinking') {
-            trendIcon.textContent = '📉';
-            trendLabel.textContent = 'SHRINKING — Fire reducing';
-            trendLabel.className = 'text-sm font-bold font-mono text-green-400';
-          } else {
-            trendIcon.textContent = '➡️';
-            trendLabel.textContent = 'STABLE — No significant change';
-            trendLabel.className = 'text-sm font-bold font-mono text-blue-400';
-            trendBadge.textContent = 'STABLE';
-            trendBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-blue-500/20 text-blue-400';
-          }
-
-          // Update TRS (Temporal Risk Score)
-          if (temporal.risk_score !== undefined) {
-            const trs = temporal.risk_score;
-            const trsEl = document.getElementById('trsScore');
-
-            trsEl.textContent = trs.toFixed(1);
-
-            if (trs >= 75) {
-              trsEl.style.color = '#ef4444'; // red-500
-              trsEl.style.textShadow = '0 0 20px rgba(239,68,68,0.5)';
-            } else if (trs >= 40) {
-              trsEl.style.color = '#f59e0b'; // amber-500
-              trsEl.style.textShadow = '0 0 10px rgba(245,158,11,0.3)';
-            } else if (trs > 0) {
-              trsEl.style.color = '#3b82f6'; // blue-500
-              trsEl.style.textShadow = 'none';
-            } else {
-              trsEl.style.color = '#9ca3af'; // gray-400
-              trsEl.style.textShadow = 'none';
-            }
-          }
-
-          if (isConfirmed && !previousFireConfirmed) {
-            showAlert(getActiveCameraName());
-          } else if (!isConfirmed && previousFireConfirmed && alertActive) {
-            hideAlert();
-          }
-          previousFireConfirmed = isConfirmed;
         }
 
-        function updateStats() {
-          const activeCamId = selector ? selector.value.replace('cam', '') : null;
-          if (!activeCamId) return;
+        if (isConfirmed && !previousFireConfirmed) {
+          showAlert(getActiveCameraName());
+        } else if (!isConfirmed && previousFireConfirmed && alertActive) {
+          hideAlert();
+        }
+        previousFireConfirmed = isConfirmed;
+      }
 
-          fetch('/api/stats/' + activeCamId)
-            .then(response => response.json())
-            .then(data => {
-              if (!data) return;
+      function updateStats() {
+        const activeCamId = selector ? selector.value.replace('cam', '') : null;
+        if (!activeCamId) return;
 
-              const metrics = data.metrics;
-              if (metrics) {
-                const camKey = selector ? selector.value : null;
-                if (camKey) {
-                  const fireEl = document.getElementById(camKey + '-fire');
-                  if (fireEl) fireEl.innerHTML = `${(metrics.fire_conf * 100).toFixed(1)}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span>`;
+        fetch('/api/stats/' + activeCamId)
+          .then(response => response.json())
+          .then(data => {
+            if (!data) return;
 
-                  const smokeEl = document.getElementById(camKey + '-smoke');
-                  if (smokeEl) smokeEl.innerHTML = `${(metrics.smoke_conf * 100).toFixed(1)}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span>`;
+            const metrics = data.metrics;
+            if (metrics) {
+              const camKey = selector ? selector.value : null;
+              if (camKey) {
+                const fireEl = document.getElementById(camKey + '-fire');
+                if (fireEl) fireEl.innerHTML = `${(metrics.fire_conf * 100).toFixed(1)}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span>`;
 
-                  const latencyEl = document.getElementById(camKey + '-latency');
-                  if (latencyEl) latencyEl.innerHTML = `${metrics.latency}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">ms</span>`;
-                }
+                const smokeEl = document.getElementById(camKey + '-smoke');
+                if (smokeEl) smokeEl.innerHTML = `${(metrics.smoke_conf * 100).toFixed(1)}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">%</span>`;
+
+                const latencyEl = document.getElementById(camKey + '-latency');
+                if (latencyEl) latencyEl.innerHTML = `${metrics.latency}<span class="text-[10px] text-[rgba(186,205,232,0.70)] ml-1">ms</span>`;
               }
+            }
 
-              const logs = data.logs;
-              if (logs && log) {
-                log.innerHTML = '';
-                logs.forEach((entry, index) => {
-                  const isAlert = entry.type === 'alert';
-                  const borderClass = isAlert ? 'border-[rgba(255,59,59,0.24)]' : 'border-[rgba(120,170,255,0.08)]';
-                  const bgClass = isAlert
-                    ? 'bg-[radial-gradient(380px_160px_at_20%_0%,rgba(255,59,59,0.12),transparent_62%),rgba(16,8,14,0.52)]'
-                    : 'bg-[rgba(10,18,36,0.45)]';
-                  const timeColor = isAlert ? 'text-[rgba(255,180,180,0.72)]' : 'text-[rgba(186,205,232,0.55)]';
-                  const msgColor = isAlert ? 'text-[rgba(255,214,214,0.92)]' : 'text-[rgba(205,225,255,0.78)]';
+            const logs = data.logs;
+            if (logs && log) {
+              log.innerHTML = '';
+              logs.forEach((entry, index) => {
+                const isAlert = entry.type === 'alert';
+                const borderClass = isAlert ? 'border-[rgba(255,59,59,0.24)]' : 'border-[rgba(120,170,255,0.08)]';
+                const bgClass = isAlert
+                  ? 'bg-[radial-gradient(380px_160px_at_20%_0%,rgba(255,59,59,0.12),transparent_62%),rgba(16,8,14,0.52)]'
+                  : 'bg-[rgba(10,18,36,0.45)]';
+                const timeColor = isAlert ? 'text-[rgba(255,180,180,0.72)]' : 'text-[rgba(186,205,232,0.55)]';
+                const msgColor = isAlert ? 'text-[rgba(255,214,214,0.92)]' : 'text-[rgba(205,225,255,0.78)]';
 
-                  const div = document.createElement('div');
-                  div.className = `grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border ${borderClass} rounded-xl ${bgClass} mb-2`;
-                  div.setAttribute('data-testid', `log-line-${index}`);
-                  div.innerHTML = `
+                const div = document.createElement('div');
+                div.className = `grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border ${borderClass} rounded-xl ${bgClass} mb-2`;
+                div.setAttribute('data-testid', `log-line-${index}`);
+                div.innerHTML = `
                   <div class="font-mono text-[11px] tracking-wider ${timeColor}">${entry.time}</div>
                   <div class="font-mono text-xs ${msgColor} leading-snug">${entry.msg}</div>
                 `;
-                  log.appendChild(div);
-                });
+                log.appendChild(div);
+              });
 
-                const hint = document.createElement('div');
-                hint.className = 'mt-2.5 font-mono text-[11px] text-[rgba(186,205,232,0.55)] tracking-wider';
-                hint.innerText = 'Real-time inference logs';
-                log.appendChild(hint);
-              }
+              const hint = document.createElement('div');
+              hint.className = 'mt-2.5 font-mono text-[11px] text-[rgba(186,205,232,0.55)] tracking-wider';
+              hint.innerText = 'Real-time inference logs';
+              log.appendChild(hint);
+            }
 
-              const history = data.growth_history;
-              if (history && growthChart) {
-                const currentIsMobile = window.innerWidth < 768;
-                const displayHistory = currentIsMobile ? history.slice(-10) : history;
+            const history = data.growth_history;
+            if (history && growthChart) {
+              const currentIsMobile = window.innerWidth < 768;
+              const displayHistory = currentIsMobile ? history.slice(-10) : history;
 
-                growthChart.data.labels = displayHistory.map(h => h.time);
-                growthChart.data.datasets[0].data = displayHistory.map(h => h.fire_area);
-                growthChart.data.datasets[1].data = displayHistory.map(h => h.smoke_area);
-                growthChart.update();
-              }
+              growthChart.data.labels = displayHistory.map(h => h.time);
+              growthChart.data.datasets[0].data = displayHistory.map(h => h.fire_area);
+              growthChart.data.datasets[1].data = displayHistory.map(h => h.smoke_area);
+              growthChart.update();
+            }
 
-              updateTemporalPanel(data.temporal_status);
+            updateTemporalPanel(data.temporal_status);
 
-              if (alertActive && audioUnlocked && fireAlarm.paused) {
-                fireAlarm.play().catch(() => { });
-              }
-            })
-            .catch(err => console.error('Error fetching stats:', err));
-        }
+            if (alertActive && audioUnlocked && fireAlarm.paused) {
+              fireAlarm.play().catch(() => { });
+            }
+          })
+          .catch(err => console.error('Error fetching stats:', err));
+      }
 
-        setInterval(updateStats, 1000);
-        updateStats();
+      setInterval(updateStats, 1000);
+      updateStats();
 
-        let currentCamIds = null;
-        function checkCameraConfig() {
-          fetch('/api/cameras')
-            .then(res => res.json())
-            .then(data => {
-              if (!data.cameras) return;
-              const newIds = data.cameras.map(c => c.id).sort().join(',');
-              if (currentCamIds === null) {
-                currentCamIds = newIds;
-              } else if (currentCamIds !== newIds) {
-                window.location.reload();
-              }
-            })
-            .catch(err => console.error('Error checking cameras:', err));
-        }
+      let currentCamIds = null;
+      function checkCameraConfig() {
+        fetch('/api/cameras')
+          .then(res => res.json())
+          .then(data => {
+            if (!data.cameras) return;
+            const newIds = data.cameras.map(c => c.id).sort().join(',');
+            if (currentCamIds === null) {
+              currentCamIds = newIds;
+            } else if (currentCamIds !== newIds) {
+              window.location.reload();
+            }
+          })
+          .catch(err => console.error('Error checking cameras:', err));
+      }
 
-        setInterval(checkCameraConfig, 3000);
-      })();
+      setInterval(checkCameraConfig, 3000);
+    })();
   </script>
 </body>
 

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Fire & Smoke — Verify OTP</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500..800&family=Inter:wght@400..800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="static/css/index.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bg-0': '#05070c',
+                        'bg-1': '#070a12',
+                        'cyan': '#28f7ff',
+                        'cyan-2': '#00c8ff',
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="min-h-screen text-gray-200 overflow-x-hidden bg-[#0b1120] flex flex-col font-sans">
+
+    <!-- Main Card Wrapper -->
+    <div class="flex-grow flex items-center justify-center w-full px-4 py-8">
+        <main class="w-full max-w-[400px] bg-[#111827] border border-[#1f2937] rounded-xl p-8 shadow-2xl relative">
+
+            <header class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-white mb-2">Verify Email</h1>
+                <p class="text-sm text-gray-400">Enter the 6-digit code sent to {{ email }}</p>
+            </header>
+
+            <form action="/verify_otp" method="POST" class="flex flex-col gap-5">
+                <input type="hidden" name="email" value="{{ email }}">
+
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                {% for message in messages %}
+                <div class="text-xs text-red-400 bg-red-900/30 border border-red-500/50 rounded-lg p-2 text-center">{{
+                    message }}</div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <!-- OTP Input -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-medium text-gray-300 ml-1">Verification Code</label>
+                    <div class="relative">
+                        <input type="text" name="otp" placeholder="123456" maxlength="6" required
+                            class="w-full text-center tracking-[0.5em] font-mono text-xl bg-[#1f2937] border border-[#374151] text-white rounded-lg py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit"
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 rounded-lg mt-2 transition-colors flex justify-center items-center gap-2 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#111827]">
+                    Verify & Continue
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    </svg>
+                </button>
+
+                <!-- Bottom divider -->
+                <div class="mt-2 pt-5 border-t border-[#1f2937] text-center">
+                    <div class="text-[10px] font-mono tracking-[0.15em] text-gray-500 uppercase">AI Fire & Smoke
+                        Detection
+                        System
+                    </div>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full mt-auto border-t border-[#1f2937] py-6" data-testid="footer-main">
+        <div class="max-w-6xl mx-auto px-4 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex flex-col md:flex-row items-center gap-3">
+                <div
+                    class="w-8 h-8 md:w-6 md:h-6 bg-blue-600 rounded flex items-center justify-center text-white shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-3 md:h-3" viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="text-center md:text-left">
+                    <div class="text-sm font-bold text-white tracking-wide">SmartVision FireGuard</div>
+                    <div class="text-[10px] text-gray-500 mt-0.5">© 2026 AI Fire Detection System. All rights reserved.
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <a href="/privacy"
+                    class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Privacy</a>
+                <a href="/terms" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Terms</a>
+                <span
+                    class="px-2 py-1 bg-[#1f2937] border border-[#374151] rounded text-[10px] font-bold text-gray-300 tracking-wide">v1.0.0</span>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

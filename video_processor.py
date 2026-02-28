@@ -59,15 +59,17 @@ class VideoProcessor:
     FIRE_TRIGGER_SECONDS = 10
     CONF_DETECTION_MIN = 0.10
 
-    def __init__(self, video_path: str, model_path: Optional[str] = None, conf_threshold: float = 0.35):
+    def __init__(self, video_path: str, model_path: Optional[str] = None, conf_threshold: float = 0.35,
+                 on_alert_callback=None, camera_name: str = 'Unknown Camera'):
         self.video_path = Path(video_path)
         if not self.video_path.exists():
             raise FileNotFoundError(f"Video not found: {self.video_path}")
 
         self.conf_threshold = conf_threshold
+        self.on_alert_callback = on_alert_callback  # callable(event: str, cam_name: str) | None
+        self.camera_name = camera_name
         self.running = True
         self.lock = threading.Lock()
-        self.cap = None
 
         self.model = None
         self.latest_result: Optional[Results] = None
@@ -87,6 +89,7 @@ class VideoProcessor:
 
         self.detection_window: deque = deque(maxlen=self.TEMPORAL_WINDOW)
         self.last_temporal_sample_time = 0.0
+        self._prev_fire_confirmed = False  # tracks previous state for edge-detection
         self.temporal_status: Dict[str, Any] = {
             'fire_confirmed': False,
             'smoke_confirmed': False,
@@ -97,6 +100,10 @@ class VideoProcessor:
             'spatial_trend': 'stable',
         }
 
+        # Shared JPEG buffer — written by _reader_loop, read by all generate_frames() callers
+        self.latest_jpeg: Optional[bytes] = None
+        self._frame_seq: int = 0  # incremented each time a new JPEG is ready
+
         if model_path and YOLO_AVAILABLE:
             try:
                 self.model = YOLO(model_path)
@@ -104,6 +111,10 @@ class VideoProcessor:
                 self.model.predict(source=np.zeros((640, 640, 3), dtype=np.uint8), verbose=False, imgsz=640)
             except Exception as e:
                 print(f"Model load error: {e}")
+
+        # Single background thread — owns VideoCapture for the lifetime of this processor
+        self._reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
+        self._reader_thread.start()
 
     def _process_detections(self, result: Results) -> Results:
         if result.boxes is None or len(result.boxes) == 0:
@@ -247,6 +258,15 @@ class VideoProcessor:
             trs_raw = (w1 * p_score) + (w2 * c_score) + (w3 * g_score)
             trs_final = max(0.0, min(100.0, trs_raw)) # Bound between 0 and 100
 
+            # Detect state transitions for alert callbacks
+            prev_confirmed = self._prev_fire_confirmed
+            self._prev_fire_confirmed = is_confirmed
+            transition_event = None
+            if not prev_confirmed and is_confirmed:
+                transition_event = 'fire_confirmed'
+            elif prev_confirmed and not is_confirmed:
+                transition_event = 'fire_cleared'
+
             self.temporal_status = {
                 'fire_confirmed': is_confirmed,
                 'smoke_confirmed': smoke_persistence >= self.FIRE_TRIGGER_SECONDS,
@@ -258,33 +278,69 @@ class VideoProcessor:
                 'risk_score': round(trs_final, 1)
             }
 
-    def _inference_loop(self) -> None:
-        while self.running:
-            with self.lock:
-                frame = self.current_frame.copy() if self.current_frame is not None else None
-
-            if frame is None:
-                time.sleep(0.01)
-                continue
-
+        # Fire transition callback — executed outside the lock to avoid deadlocks
+        if transition_event and self.on_alert_callback:
             try:
-                if self.model:
-                    start = time.time()
-                    results = self.model.predict(frame, conf=self.conf_threshold, iou=0.5, verbose=False)
-                    latency = (time.time() - start) * 1000
+                threading.Thread(
+                    target=self.on_alert_callback,
+                    args=(transition_event, self.camera_name),
+                    daemon=True
+                ).start()
+            except Exception as e:
+                print(f"Alert callback error: {e}")
 
-                    if results:
-                        processed = self._process_detections(results[0])
-                        with self.lock:
-                            self.latest_result = processed
-                            self.inference_stats['latency'] = int(latency)
-                        self._update_logs()
+    def _reader_loop(self) -> None:
+        """Single background thread: owns VideoCapture, runs inference, writes shared JPEG."""
+        cap = cv2.VideoCapture(str(self.video_path))
+        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        interval = 1.0 / fps
+
+        try:
+            while self.running:
+                loop_start = time.time()
+
+                success, frame = cap.read()
+                if not success:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    continue
+
+                # Store raw frame for inference
+                with self.lock:
+                    self.current_frame = frame
+
+                # Run inference if model is available
+                result = None
+                if self.model:
+                    try:
+                        t0 = time.time()
+                        results = self.model.predict(frame, conf=self.conf_threshold, iou=0.5, verbose=False)
+                        latency = (time.time() - t0) * 1000
+                        if results:
+                            result = self._process_detections(results[0])
+                            with self.lock:
+                                self.latest_result = result
+                                self.inference_stats['latency'] = int(latency)
+                            self._update_logs()
+                    except Exception as e:
+                        print(f"Inference error: {e}")
 
                 self._sample_temporal_window()
 
-            except Exception as e:
-                print(f"Inference error: {e}")
-                time.sleep(0.1)
+                # Annotate and encode to JPEG once — shared by all clients
+                output = result.plot(img=frame) if result else frame
+                ret, buf = cv2.imencode('.jpg', output, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                if ret:
+                    with self.lock:
+                        self.latest_jpeg = buf.tobytes()
+                        self._frame_seq += 1
+
+                # Pace to video FPS
+                elapsed = time.time() - loop_start
+                sleep_time = interval - elapsed
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
+        finally:
+            cap.release()
 
     def _update_logs(self) -> None:
         current_time = time.time()
@@ -325,55 +381,22 @@ class VideoProcessor:
             }
 
     def stop(self):
+        """Signal the background thread to stop and wait for it."""
         self.running = False
-        if self.cap is not None:
-            try:
-                self.cap.release()
-            except Exception:
-                pass
-            self.cap = None
-        if hasattr(self, 'inference_thread') and self.inference_thread.is_alive():
-            self.inference_thread.join(timeout=2.0)
-
-    def start_inference_thread(self):
-        if hasattr(self, 'inference_thread') and self.inference_thread.is_alive():
-            return
-
-        self.running = True
-        self.inference_thread = threading.Thread(target=self._inference_loop, daemon=True)
-        self.inference_thread.start()
+        if hasattr(self, '_reader_thread') and self._reader_thread.is_alive():
+            self._reader_thread.join(timeout=3.0)
 
     def generate_frames(self):
-        self.cap = cv2.VideoCapture(str(self.video_path))
-        fps = self.cap.get(cv2.CAP_PROP_FPS) or 30.0
-        interval = 1.0 / fps
-
-        if self.model:
-            self.start_inference_thread()
-
-        try:
-            while self.running:
-                start = time.time()
-                success, frame = self.cap.read()
-                if not success:
-                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    continue
-
-                with self.lock:
-                    self.current_frame = frame
-                    result = self.latest_result
-
-                output = result.plot(img=frame) if result else frame
-
-                ret, buffer = cv2.imencode('.jpg', output, [cv2.IMWRITE_JPEG_QUALITY, 70])
-                if ret:
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-
-                elapsed = time.time() - start
-                if interval > elapsed:
-                    time.sleep(interval - elapsed)
-        finally:
-            if self.cap is not None:
-                self.cap.release()
-                self.cap = None
+        """Lightweight generator — reads the shared JPEG buffer, never touches VideoCapture."""
+        last_seq = -1
+        while self.running:
+            with self.lock:
+                seq = self._frame_seq
+                jpeg = self.latest_jpeg if seq != last_seq else None
+                if seq != last_seq:
+                    last_seq = seq
+            if jpeg:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + jpeg + b'\r\n')
+            else:
+                time.sleep(0.005)  # 5 ms poll — keeps CPU low while staying responsive

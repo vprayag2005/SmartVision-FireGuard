@@ -30,25 +30,63 @@
   </script>
 </head>
 
-<body class="min-h-screen text-gray-200 bg-[#0b1120] font-sans overflow-x-hidden">
-  <div class="flex h-screen overflow-hidden">
+<body class="min-h-screen text-gray-200 bg-[#0b1120] font-sans overflow-x-hidden flex flex-col lg:block">
+
+  <!-- Mobile Header (Visible only on small screens) -->
+  <div class="lg:hidden flex items-center gap-4 p-4 bg-[#0b1120] border-b border-[#1f2937] sticky top-0 z-30 w-full">
+    <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white transition-colors p-1 flex-shrink-0">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+        class="w-6 h-6">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+      </svg>
+    </button>
+    <div class="flex items-center gap-3">
+      <div
+        class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path fill-rule="evenodd"
+            d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
+            clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div>
+        <div class="font-bold text-sm tracking-wide text-white">AI FIRE DETECT</div>
+        <div class="text-[10px] uppercase tracking-wider text-gray-500 font-medium font-mono">Admin Panel</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-1 lg:h-screen overflow-hidden relative w-full">
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="sidebarBackdrop" onclick="toggleSidebar()"
+      class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity opacity-0"></div>
 
     <!-- SIDEBAR -->
-    <aside class="w-[260px] flex-shrink-0 bg-[#0b1120] border-r border-[#1f2937] flex flex-col pt-6 pb-5">
+    <aside id="adminSidebar"
+      class="fixed lg:static inset-y-0 left-0 z-50 w-[260px] transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out bg-[#0b1120] border-r border-[#1f2937] flex flex-col pt-6 pb-5 h-full">
       <!-- Logo -->
-      <div class="px-6 mb-8 flex items-center gap-3">
-        <div
-          class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path fill-rule="evenodd"
-              d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
-              clip-rule="evenodd" />
+      <div class="px-6 mb-8 flex flex-row items-center justify-between lg:justify-start">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
+                clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <div class="font-bold text-sm tracking-wide text-white">AI FIRE DETECT</div>
+            <div class="text-[10px] uppercase tracking-wider text-gray-500 font-medium font-mono">Admin Panel</div>
+          </div>
+        </div>
+        <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-white p-1 ml-2">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+            class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </div>
-        <div>
-          <div class="font-bold text-sm tracking-wide text-white">AI FIRE DETECT</div>
-          <div class="text-[10px] uppercase tracking-wider text-gray-500 font-medium font-mono">Admin Panel</div>
-        </div>
+        </button>
       </div>
 
       <!-- Nav -->
@@ -62,11 +100,20 @@
           </svg>
           <span class="font-medium text-sm">Sources</span>
         </a>
+        <a href="{{ url_for('monitoring') }}"
+          class="flex items-center gap-3 px-3 py-2.5 text-gray-400 hover:bg-[#1e293b]/50 hover:text-white rounded-lg transition-colors group">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+            class="w-5 h-5 group-hover:text-blue-400 transition-colors">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+          </svg>
+          <span class="font-medium text-sm">Live Monitoring</span>
+        </a>
       </nav>
 
       <!-- Logout -->
       <div class="px-4 mt-auto">
-        <a href="{{ url_for('index') }}"
+        <a href="{{ url_for('logout') }}"
           class="flex items-center gap-3 px-3 py-2 text-gray-400 hover:text-white transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
             stroke="currentColor" class="w-5 h-5">
@@ -79,8 +126,8 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 overflow-y-auto bg-[#0b1120]">
-      <div class="max-w-[1200px] mx-auto p-8 lg:p-10">
+    <main class="flex-1 overflow-y-auto bg-[#0b1120] w-full flex flex-col">
+      <div class="max-w-[1200px] w-full mx-auto p-8 lg:p-10 flex-grow">
 
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
@@ -127,60 +174,111 @@
 
         <!-- Table -->
         <div class="bg-[#111827] border border-[#1f2937] rounded-xl overflow-hidden">
-          <table class="w-full text-left text-sm text-gray-400">
-            <thead
-              class="text-xs uppercase bg-[#1e293b]/50 border-b border-[#1f2937] text-gray-500 font-semibold tracking-wider">
-              <tr>
-                <th scope="col" class="px-6 py-4">Source Name</th>
-                <th scope="col" class="px-6 py-4">Type</th>
-                <th scope="col" class="px-6 py-4">Location</th>
-                <th scope="col" class="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[#1f2937]">
-              {% if cameras %}
-              {% for cam in cameras %}
-              <tr class="hover:bg-[#1e293b]/30 transition-colors">
-                <td class="px-6 py-4">
-                  <div class="font-medium text-white">{{ cam.name }}</div>
-                  <div class="text-xs text-gray-500 mt-0.5 font-mono">ID: SRC-{{ "%04d" | format(cam.id) }}</div>
-                </td>
-                <td class="px-6 py-4">
-                  <span
-                    class="px-2.5 py-1 rounded bg-[#1e3a8a]/40 text-blue-400 text-[10px] font-bold tracking-wider border border-[#1e3a8a]">{{
-                    cam.type | upper }}</span>
-                </td>
-                <td class="px-6 py-4">{{ cam.location }}</td>
-                <td class="px-6 py-4 text-right">
-                  <form action="{{ url_for('delete_camera', cam_id=cam.id) }}" method="POST" class="inline"
-                    id="deleteForm-{{ cam.id }}">
-                    <button type="button" onclick="confirmDelete('{{ cam.id }}', '{{ cam.name|escape }}')"
-                      class="text-gray-500 hover:text-red-400 transition-colors bg-[#1f2937] hover:bg-[#374151] p-1.5 rounded-lg border border-[#374151]"
-                      title="Delete Source">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                        stroke="currentColor" class="w-4 h-4">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
-                    </button>
-                  </form>
-                </td>
-              </tr>
-              {% endfor %}
-              {% else %}
-              <tr>
-                <td colspan="5" class="px-6 py-12 text-center text-gray-500 text-sm">No detection sources configured
-                </td>
-              </tr>
-              {% endif %}
-            </tbody>
-          </table>
+          <div class="w-full">
+            <table class="w-full text-left text-sm text-gray-400 block md:table">
+              <thead
+                class="text-xs uppercase bg-[#1e293b]/50 border-b border-[#1f2937] text-gray-500 font-semibold tracking-wider hidden md:table-header-group">
+                <tr>
+                  <th scope="col" class="px-6 py-4">Source Name</th>
+                  <th scope="col" class="px-6 py-4">Type</th>
+                  <th scope="col" class="px-6 py-4">Location</th>
+                  <th scope="col" class="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#1f2937] block md:table-row-group">
+                {% if cameras %}
+                {% for cam in cameras %}
+                <tr
+                  class="hover:bg-[#1e293b]/30 transition-colors block md:table-row md:border-none border-b border-[#1f2937]">
+                  <td class="px-6 py-4 block md:table-cell">
+                    <div class="flex items-center justify-between md:block">
+                      <span
+                        class="md:hidden text-xs uppercase text-gray-500 font-semibold tracking-wider w-[100px]">Source:</span>
+                      <div class="text-right md:text-left">
+                        <div class="font-medium text-white">{{ cam.name }}</div>
+                        <div class="text-xs text-gray-500 mt-0.5 font-mono">ID: SRC-{{ "%04d" | format(cam.id) }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 block md:table-cell">
+                    <div class="flex items-center justify-between md:block">
+                      <span
+                        class="md:hidden text-xs uppercase text-gray-500 font-semibold tracking-wider w-[100px]">Type:</span>
+                      <span
+                        class="px-2.5 py-1 rounded bg-[#1e3a8a]/40 text-blue-400 text-[10px] font-bold tracking-wider border border-[#1e3a8a] text-right md:text-left">{{
+                        cam.type | upper }}</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 block md:table-cell">
+                    <div class="flex items-center justify-between md:block">
+                      <span
+                        class="md:hidden text-xs uppercase text-gray-500 font-semibold tracking-wider w-[100px]">Location:</span>
+                      <span class="text-right md:text-left">{{ cam.location }}</span>
+                    </div>
+                  </td>
+                  <td class="px-6 md:py-4 pb-4 pt-2 md:pt-4 block md:table-cell text-right">
+                    <div class="flex items-center justify-between md:justify-end md:block w-full">
+                      <span
+                        class="md:hidden text-xs uppercase text-gray-500 font-semibold tracking-wider w-[100px] text-left">Action:</span>
+                      <form action="{{ url_for('delete_camera', cam_id=cam.id) }}" method="POST" class="inline"
+                        id="deleteForm-{{ cam.id }}">
+                        <button type="button" onclick="confirmDelete('{{ cam.id }}', '{{ cam.name|escape }}')"
+                          class="text-gray-500 hover:text-red-400 transition-colors bg-[#1f2937] hover:bg-[#374151] p-1.5 rounded-lg border border-[#374151]"
+                          title="Delete Source">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                          </svg>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr class="block md:table-row">
+                  <td colspan="4" class="px-6 py-12 text-center text-gray-500 text-sm block md:table-cell">No detection
+                    sources configured</td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div class="mt-4 flex justify-between items-center text-xs text-gray-500">
           <div>Showing {{ cameras | length }} total detection sources</div>
         </div>
       </div>
+
+      <!-- Footer -->
+      <footer class="w-full mt-auto border-t border-[#1f2937] py-6" data-testid="footer-admin">
+        <div class="w-full px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex flex-col md:flex-row items-center gap-3">
+            <div class="w-8 h-8 md:w-6 md:h-6 bg-blue-600 rounded flex items-center justify-center text-white shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-3 md:h-3" viewBox="0 0 24 24"
+                fill="currentColor">
+                <path fill-rule="evenodd"
+                  d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
+                  clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="text-center md:text-left">
+              <div class="text-sm font-bold text-white tracking-wide">SmartVision FireGuard</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">© 2026 AI Fire Detection System. All rights reserved.
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-6">
+            <a href="/privacy" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Privacy</a>
+            <a href="/terms" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Terms</a>
+            <span
+              class="px-2 py-1 bg-[#1f2937] border border-[#374151] rounded text-[10px] font-bold text-gray-300 tracking-wide">v1.0.0</span>
+          </div>
+        </div>
+      </footer>
     </main>
   </div>
 
@@ -560,6 +658,25 @@
       xhr.open('POST', '/upload_video');
       xhr.send(formData);
     });
+
+    // Sidebar Toggle Logic
+    const adminSidebar = document.getElementById('adminSidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    let isSidebarOpen = false;
+
+    function toggleSidebar() {
+      isSidebarOpen = !isSidebarOpen;
+      if (isSidebarOpen) {
+        adminSidebar.classList.remove('-translate-x-full');
+        sidebarBackdrop.classList.remove('hidden');
+        // use brief timeout to allow display:block to apply before changing opacity
+        setTimeout(() => sidebarBackdrop.classList.remove('opacity-0'), 10);
+      } else {
+        adminSidebar.classList.add('-translate-x-full');
+        sidebarBackdrop.classList.add('opacity-0');
+        setTimeout(() => sidebarBackdrop.classList.add('hidden'), 300);
+      }
+    }
   </script>
 
 </body>
