@@ -1,9 +1,9 @@
 #!/bin/bash
 # Startup script for Azure App Service (Linux)
 
-# 1. Update package list and install system dependencies for OpenCV/Torch if needed
-# Note: opencv-python-headless should handle most dependencies, but libglib2.0-0 is often needed
-apt-get update && apt-get install -y libglib2.0-0
+# 1. Update package list and install system dependencies for OpenCV/Torch
+# We need libglib2.0-0 and libgl1 for OpenCV to run on Linux servers
+apt-get update && apt-get install -y libglib2.0-0 libgl1
 
 # 2. Run Gunicorn
 # --bind 0.0.0.0:8000 specifies the port Azure expects
