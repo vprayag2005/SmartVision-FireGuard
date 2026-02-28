@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confirm Account Deletion — SmartVision FireGuard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] } } } }</script>
+</head>
+
+<body class="min-h-screen text-gray-200 bg-[#0b1120] flex flex-col items-center justify-center font-sans">
+
+    <div class="mb-8 flex flex-col items-center">
+        <div
+            class="w-12 h-12 bg-red-900/60 rounded-xl flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(220,38,38,0.3)] text-red-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+        </div>
+        <div class="font-mono text-xs font-semibold tracking-[0.2em] text-red-500">DANGER ZONE</div>
+    </div>
+
+    <main class="w-[min(400px,90%)] bg-[#111827] border border-red-900/40 rounded-xl p-8 shadow-2xl">
+        <header class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-white mb-2">Delete Account</h1>
+            <p class="text-sm text-gray-400">Enter the OTP sent to your email to permanently delete your account. <span
+                    class="text-red-400 font-semibold">This cannot be undone.</span></p>
+        </header>
+
+        <form action="/confirm_delete_account" method="POST" class="flex flex-col gap-5">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}{% for message in messages %}
+            <div class="text-xs text-red-400 bg-red-900/30 border border-red-500/50 rounded-lg p-2 text-center">{{
+                message }}</div>
+            {% endfor %}{% endif %}
+            {% endwith %}
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-medium text-gray-300 ml-1">OTP Code</label>
+                <input type="text" name="otp" placeholder="6-digit code" maxlength="6" required
+                    class="w-full bg-[#1f2937] border border-[#374151] text-white rounded-lg px-3 py-2.5 text-sm font-mono tracking-[0.3em] text-center focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors" />
+            </div>
+
+            <button type="submit"
+                class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg transition-colors flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+                Permanently Delete Account
+            </button>
+
+            <div class="text-center">
+                <a href="javascript:history.back()" class="text-gray-400 hover:text-white text-sm transition-colors">←
+                    Cancel</a>
+            </div>
+        </form>
+    </main>
+
+    <footer class="mt-8 text-xs text-gray-500">© 2026 SmartVision FireGuard</footer>
+</body>
+
+</html>

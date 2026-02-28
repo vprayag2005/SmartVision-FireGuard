@@ -1,28 +1,7 @@
 /* ===============================
-   LOGIN ROUTING (kept inside IIFE)
+   LOGIN ROUTING
+   (Mock routing removed. Handled by backend.)
    =============================== */
-(function () {
-  function qs(sel) {
-    return document.querySelector(sel);
-  }
-
-  var loginForm = qs('[data-page="login"]');
-
-  if (loginForm) {
-    loginForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      var role = qs('#role');
-      var roleValue = role ? role.value : 'User';
-
-      if (roleValue === 'Admin') {
-        window.location.href = '/admin';
-      } else {
-        window.location.href = '/monitoring';
-      }
-    });
-  }
-})();
 
 /* ===============================
    MODAL FUNCTIONS (GLOBAL)

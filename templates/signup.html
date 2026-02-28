@@ -30,106 +30,112 @@
   </script>
 </head>
 
-<body
-  class="min-h-screen text-gray-200 overflow-x-hidden bg-[#0b1120] flex flex-col items-center justify-center font-sans">
+<body class="min-h-screen text-gray-200 overflow-x-hidden bg-[#0b1120] flex flex-col font-sans">
 
-  <!-- Logo Section -->
-  <div class="mb-8 flex flex-col items-center">
-    <div
-      class="w-12 h-12 bg-[#1e3a8a] rounded-xl flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(59,130,246,0.3)] text-blue-400">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-        <path fill-rule="evenodd"
-          d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
-          clip-rule="evenodd" />
-      </svg>
-    </div>
-    <div class="font-mono text-xs font-semibold tracking-[0.2em] text-blue-500">SAFETY FIRST</div>
+  <!-- Main Card Wrapper -->
+  <div class="flex-grow flex items-center justify-center w-full px-4 py-8">
+    <main class="w-full max-w-[400px] bg-[#111827] border border-[#1f2937] rounded-xl p-5 shadow-2xl relative">
+
+      <header class="text-center mb-4">
+        <h1 class="text-xl font-bold text-white mb-1">Create Account</h1>
+        <p class="text-[11px] text-gray-400">Join the AI Fire & Smoke Detection Platform</p>
+      </header>
+
+      <form action="/signup" method="POST" class="flex flex-col gap-2.5">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="text-[10px] py-1 text-red-400 bg-red-900/30 border border-red-500/50 rounded-lg px-2 text-center">{{
+          message
+          }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Email -->
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-medium text-gray-300 ml-1">Email Address</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                <path
+                  d="M3 4a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H3zm14 2L10 10.5 3 6v-.5h14v.5z" />
+              </svg>
+            </div>
+            <input type="email" name="email" placeholder="user@domain.com" required
+              class="w-full bg-[#1f2937] border border-[#374151] text-white rounded-lg pl-8 pr-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-medium text-gray-300 ml-1">Password</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                <path fill-rule="evenodd"
+                  d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+                  clip-rule="evenodd" />
+              </svg>
+            </div>
+            <input type="password" name="password" placeholder="••••••••" required minlength="8"
+              class="w-full bg-[#1f2937] border border-[#374151] text-white rounded-lg pl-8 pr-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit"
+          class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-1.5 text-sm rounded-lg mt-1 transition-colors flex justify-center items-center gap-1.5 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#111827]">
+          Sign Up
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+            class="w-3.5 h-3.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+        </button>
+
+        <!-- Already have an account text -->
+        <div class="text-center mt-1">
+          <span class="text-gray-400 text-[11px]">Already have an account?</span>
+          <a href="{{ url_for('index') }}"
+            class="text-blue-500 hover:text-blue-400 font-medium text-[11px] ml-1 transition-colors">
+            Sign In
+          </a>
+        </div>
+
+        <!-- Bottom divider and subtitle -->
+        <div class="mt-1 pt-3 border-t border-[#1f2937] text-center">
+          <div class="text-[9px] font-mono tracking-[0.15em] text-gray-500 uppercase">AI Fire & Smoke Detection System
+          </div>
+        </div>
+      </form>
+    </main>
   </div>
 
-  <!-- Main Card -->
-  <main class="w-[min(400px,90%)] bg-[#111827] border border-[#1f2937] rounded-xl p-8 shadow-2xl relative">
-
-    <header class="text-center mb-8">
-      <h1 class="text-2xl font-bold text-white mb-2">Admin Login</h1>
-      <p class="text-sm text-gray-400">Access the AI Fire & Smoke Detection Panel</p>
-    </header>
-
-    <form data-page="signup" class="flex flex-col gap-5">
-
-      <!-- Email -->
-      <div class="flex flex-col gap-1.5">
-        <label class="text-xs font-medium text-gray-300 ml-1">Email Address</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-              <path d="M3 4a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H3zm14 2L10 10.5 3 6v-.5h14v.5z" />
-            </svg>
-          </div>
-          <input type="email" placeholder="admin@system.ai" required
-            class="w-full bg-[#1f2937] border border-[#374151] text-white rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
-        </div>
-      </div>
-
-      <!-- Password -->
-      <div class="flex flex-col gap-1.5">
-        <label class="text-xs font-medium text-gray-300 ml-1">Password</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-              <path fill-rule="evenodd"
-                d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
-                clip-rule="evenodd" />
-            </svg>
-          </div>
-          <input type="password" placeholder="••••••••" required
-            class="w-full bg-[#1f2937] border border-[#374151] text-white rounded-lg pl-9 pr-9 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
-          <button type="button"
-            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-              <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
-              <path fill-rule="evenodd"
-                d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                clip-rule="evenodd" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Remember / Forgot -->
-      <div class="flex items-center justify-between mt-1">
-        <label class="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox"
-            class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900" />
-          <span class="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">Remember me</span>
-        </label>
-        <a href="#" class="text-sm text-blue-500 hover:text-blue-400 transition-colors">Forgot password?</a>
-      </div>
-
-      <!-- Submit -->
-      <button type="submit"
-        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 rounded-lg mt-2 transition-colors flex justify-center items-center gap-2 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#111827]">
-        Sign In to Dashboard
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-          class="w-4 h-4">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-        </svg>
-      </button>
-
-      <!-- Bottom divider and subtitle -->
-      <div class="mt-4 pt-5 border-t border-[#1f2937] text-center">
-        <div class="text-[10px] font-mono tracking-[0.15em] text-gray-500 uppercase">AI Fire & Smoke Detection System
-        </div>
-      </div>
-    </form>
-  </main>
-
   <!-- Footer -->
-  <footer class="mt-8 text-xs text-gray-500 flex items-center justify-center gap-6">
-    <a href="#" class="hover:text-gray-400 transition-colors">Privacy Policy</a>
-    <span class="w-1 h-1 rounded-full bg-gray-700"></span>
-    <a href="#" class="hover:text-gray-400 transition-colors">Security Standards</a>
-    <span class="w-1 h-1 rounded-full bg-gray-700"></span>
-    <span>v2.4.0</span>
+  <footer class="w-full mt-auto border-t border-[#1f2937] py-4" data-testid="footer-main">
+    <div class="max-w-6xl mx-auto px-4 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex flex-col md:flex-row items-center gap-3">
+        <div class="w-8 h-8 md:w-6 md:h-6 bg-blue-600 rounded flex items-center justify-center text-white shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-3 md:h-3" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd"
+              d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z"
+              clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="text-center md:text-left">
+          <div class="text-sm font-bold text-white tracking-wide">SmartVision FireGuard</div>
+          <div class="text-[10px] text-gray-500 mt-0.5">© 2026 AI Fire Detection System. All rights reserved.</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="/privacy" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Privacy</a>
+        <a href="/terms" class="text-xs font-medium text-gray-500 hover:text-white transition-colors">Terms</a>
+        <span
+          class="px-2 py-1 bg-[#1f2937] border border-[#374151] rounded text-[10px] font-bold text-gray-300 tracking-wide">v1.0.0</span>
+      </div>
+    </div>
   </footer>
 
   <script src="static/js/script.js"></script>
