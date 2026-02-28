@@ -1,5 +1,8 @@
 #!/bin/bash
 # Startup script for Azure App Service (Linux)
+set -euo pipefail
+
+export PYTHONUNBUFFERED=1
 
 # 1. Update package list and install system dependencies for OpenCV/Torch
 # We only install if libGL.so.1 is missing to avoid long startup times on every boot
@@ -11,7 +14,11 @@ else
 fi
 
 # 2. Run Gunicorn
-# --bind 0.0.0.0:8000 specifies the port Azure expects
+# --bind 0.0.0.0:${PORT:-8000} uses the port Azure exposes
 # --timeout 600 ensures the app doesn't timeout during heavy AI processing
+# --access-logfile/-error-logfile emit logs to stdout for App Service logs
 # app:app refers to app.py and the Flask 'app' object
-gunicorn --bind 0.0.0.0:8000 --timeout 600 --workers 1 app:app
+PORT_TO_USE="${PORT:-${WEBSITES_PORT:-8000}}"
+exec gunicorn --bind 0.0.0.0:${PORT_TO_USE} --timeout 600 --workers 1 \
+  --access-logfile - --error-logfile - --capture-output --log-level info \
+  app:app

@@ -38,12 +38,29 @@ login_manager.login_view = 'index'
 app.config['VIDEO_PATH'] = Path(app.root_path) / 'static' / 'video' / 'cctv_demo_detection.mp4'
 app.config['MODEL_PATH'] = Path(app.root_path) / 'models' / 'best.pt'
 
+def resolve_db_path() -> Path:
+    env_path = os.environ.get('DATABASE_PATH')
+    if env_path:
+        return Path(env_path)
+    if os.name != 'nt':
+        home = os.environ.get('HOME')
+        if home:
+            return Path(home) / 'site' / 'data' / 'database.db'
+    return Path(app.root_path) / 'database.db'
+
+DB_PATH = resolve_db_path()
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+print(f"Using database path: {DB_PATH}")
+
+def get_db_connection() -> sqlite3.Connection:
+    return sqlite3.connect(DB_PATH)
+
 # Global video processors mapping
 processors = {}
 
 def get_processor(cam_id):
     if cam_id not in processors:
-        conn = sqlite3.connect('database.db')
+        conn = get_db_connection()
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
         c.execute('SELECT * FROM cameras WHERE id = ?', (cam_id,))
@@ -73,7 +90,7 @@ def index():
         password = request.form.get('password')
         role = request.form.get('role')
 
-        conn = sqlite3.connect('database.db')
+        conn = get_db_connection()
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
         c.execute('SELECT * FROM users WHERE email = ?', (email,))
@@ -149,7 +166,7 @@ def send_otp_email(email, otp, subject, purpose_text):
 
 def _get_all_verified_user_emails():
     """Return a list of all verified user email addresses."""
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute('SELECT email FROM users WHERE is_verified = 1')
@@ -274,7 +291,7 @@ def fire_alert_callback(event: str, camera_name: str):
 def forgot_password():
     if request.method == 'POST':
         email = request.form.get('email')
-        conn = sqlite3.connect('database.db')
+        conn = get_db_connection()
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
         c.execute('SELECT * FROM users WHERE email = ?', (email,))
@@ -283,7 +300,7 @@ def forgot_password():
         if user_row:
             otp = generate_otp()
             expires_at = time.time() + 600
-            conn = sqlite3.connect('database.db')
+            conn = get_db_connection()
             c = conn.cursor()
             c.execute('''INSERT INTO otps (email, otp, password_hash, role, expires_at)
                 VALUES (?, ?, '', '', ?)
@@ -311,7 +328,7 @@ def reset_password():
             flash('Password must be 8+ chars with uppercase, lowercase, number and special character.')
             return render_template('reset_password.html', email=email)
 
-        conn = sqlite3.connect('database.db')
+        conn = get_db_connection()
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
         c.execute('SELECT * FROM otps WHERE email = ?', (f'reset:{email}',))
@@ -339,7 +356,7 @@ def delete_account():
     email = current_user.email
     otp = generate_otp()
     expires_at = time.time() + 600
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('''INSERT INTO otps (email, otp, password_hash, role, expires_at)
         VALUES (?, ?, '', '', ?)
@@ -361,7 +378,7 @@ def confirm_delete_account():
     if request.method == 'POST':
         otp_input = request.form.get('otp')
         email = current_user.email
-        conn = sqlite3.connect('database.db')
+        conn = get_db_connection()
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
         c.execute('SELECT * FROM otps WHERE email = ?', (f'delete:{email}',))
@@ -423,7 +440,7 @@ def signup():
         password = request.form.get('password')
         role = 'User' # Default new signups to User
 
-        conn = sqlite3.connect('database.db')
+        conn = get_db_connection()
         c = conn.cursor()
         c.execute('SELECT id FROM users WHERE email = ?', (email,))
         if c.fetchone():
@@ -530,7 +547,7 @@ def verify_otp():
     if request.method == 'POST':
         otp_attempt = request.form.get('otp')
         
-        conn = sqlite3.connect('database.db')
+        conn = get_db_connection()
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
         c.execute('SELECT * FROM otps WHERE email = ?', (email,))
@@ -601,7 +618,7 @@ def verify_otp():
 @login_required
 def monitoring():
     """Render the monitoring dashboard."""
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute('SELECT * FROM cameras')
@@ -620,7 +637,7 @@ def terms():
     return render_template('terms.html')
 
 def init_db():
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS cameras (
@@ -673,7 +690,7 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute('SELECT * FROM users WHERE id = ?', (user_id,))
@@ -692,7 +709,7 @@ def admin():
     if current_user.role != 'Admin':
         return redirect(url_for('monitoring'))
     """Render the admin dashboard with active cameras."""
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute('SELECT * FROM cameras')
@@ -734,7 +751,7 @@ def upload_video():
         
         # Save to database
         video_name = request.form.get('video_name', filename)
-        conn = sqlite3.connect('database.db')
+        conn = get_db_connection()
         c = conn.cursor()
         c.execute('INSERT INTO cameras (name, type, location, path) VALUES (?, ?, ?, ?)',
                   (video_name, 'Video', upload_path.name, str(upload_path)))
@@ -772,7 +789,7 @@ def delete_camera(cam_id):
     if current_user.role != 'Admin':
         return "Unauthorized", 403
     """Delete a camera source and its associated physical file."""
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     
@@ -810,7 +827,7 @@ def delete_camera(cam_id):
 @login_required
 def get_cameras():
     """Return a list of current cameras for dynamic frontend polling."""
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute('SELECT id, name, location FROM cameras')
@@ -831,3 +848,4 @@ def get_stats(cam_id):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=False, host='0.0.0.0', port=port, threaded=True)
+
