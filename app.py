@@ -118,6 +118,7 @@ init_db()
 
 # Global video processors mapping
 processors = {}
+processors_lock = threading.Lock()
 
 @app.route('/health')
 def health():
@@ -125,20 +126,23 @@ def health():
 
 def get_processor(cam_id):
     if cam_id not in processors:
-        conn = get_db_connection()
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        c.execute('SELECT * FROM cameras WHERE id = ?', (cam_id,))
-        cam = c.fetchone()
-        conn.close()
-        
-        if cam and Path(cam['path']).exists():
-             processors[cam_id] = VideoProcessor(
-                 cam['path'],
-                 model_path=app.config['MODEL_PATH'],
-                 on_alert_callback=fire_alert_callback,
-                 camera_name=cam['name']
-             )
+        with processors_lock:
+            # Double-check inside lock
+            if cam_id not in processors:
+                conn = get_db_connection()
+                conn.row_factory = sqlite3.Row
+                c = conn.cursor()
+                c.execute('SELECT * FROM cameras WHERE id = ?', (cam_id,))
+                cam = c.fetchone()
+                conn.close()
+                
+                if cam and Path(cam['path']).exists():
+                     processors[cam_id] = VideoProcessor(
+                         cam['path'],
+                         model_path=app.config['MODEL_PATH'],
+                         on_alert_callback=fire_alert_callback,
+                         camera_name=cam['name']
+                     )
     return processors.get(cam_id)
 
 @app.route('/', methods=['GET', 'POST'])
