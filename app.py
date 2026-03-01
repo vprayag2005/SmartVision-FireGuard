@@ -4,7 +4,12 @@ import sqlite3
 import threading
 from pathlib import Path
 
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load variables from .env into os.environ
+except ImportError:
+    pass  # Azure sets environment variables natively
+
 from flask import Flask, render_template, Response, request, redirect, url_for, flash, send_from_directory
 from werkzeug.utils import secure_filename
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -12,8 +17,6 @@ from flask_mail import Mail, Message
 
 from video_processor import VideoProcessor
 from auth import hash_password, verify_password, validate_password, generate_otp
-
-load_dotenv()  # Load variables from .env into os.environ
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'change-me-in-production')
