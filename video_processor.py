@@ -64,6 +64,7 @@ class VideoProcessor:
     _fire_cls_id = 0
     _smoke_cls_id = 1
     _model_lock = threading.Lock()
+    _inference_lock = threading.Lock() # Prevents YOLO state corruption
 
     def __init__(self, video_path: str, model_path: Optional[str] = None, conf_threshold: float = 0.35,
                  on_alert_callback=None, camera_name: str = 'Unknown Camera'):
@@ -400,22 +401,24 @@ class VideoProcessor:
             frame_to_process = None
             with self.lock:
                 if self.current_frame is not None:
-                    # Capture a copy only when we are actually going to process it
-                    # This reduces memory pressure on the B1 instance
-                    frame_to_process = self.current_frame.copy()
+                    # Capture a copy and clear it so we don't process it twice
+                    frame_to_process = self.current_frame
+                    self.current_frame = None
 
             if frame_to_process is not None:
                 try:
                     t0 = time.time()
                     
-                    # Optimization: Use imgsz=320 to significantly reduce CPU load
-                    results = self.model.predict(
-                        frame_to_process, 
-                        conf=self.conf_threshold, 
-                        iou=0.45, 
-                        imgsz=320, 
-                        verbose=False
-                    )
+                    # YOLO.predict is NOT thread-safe on a single shared instance!
+                    with VideoProcessor._inference_lock:
+                        # Optimization: Use imgsz=320 to significantly reduce CPU load
+                        results = self.model.predict(
+                            frame_to_process, 
+                            conf=self.conf_threshold, 
+                            iou=0.45, 
+                            imgsz=320, 
+                            verbose=False
+                        )
                     
                     latency = (time.time() - t0) * 1000
                     
@@ -456,21 +459,22 @@ class VideoProcessor:
                 fire_area = self.inference_stats['fire_area']
                 smoke_area = self.inference_stats['smoke_area']
 
-            self.area_history.append({
-                'time': timestamp,
-                'fire_area': fire_area,
-                'smoke_area': smoke_area
-            })
+                self.area_history.append({
+                    'time': timestamp,
+                    'fire_area': fire_area,
+                    'smoke_area': smoke_area
+                })
 
-            has_detection = fire > 10.0 or smoke > 10.0
-            log_type = "alert" if has_detection else "normal"
-            msg = f"Inference • Fire: {fire:.1f}% • Smoke: {smoke:.1f}%"
+                has_detection = fire > 10.0 or smoke > 10.0
+                log_type = "alert" if has_detection else "normal"
+                msg = f"Inference • Fire: {fire:.1f}% • Smoke: {smoke:.1f}%"
 
-            self.logs.appendleft({
-                'time': timestamp,
-                'msg': msg,
-                'type': log_type
-            })
+                self.logs.appendleft({
+                    'time': timestamp,
+                    'msg': msg,
+                    'type': log_type
+                })
+                
             self.last_log_time = current_time
 
     def get_stats(self) -> Dict[str, Any]:

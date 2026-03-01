@@ -736,7 +736,9 @@
             }
           } else {
             el.classList.add('hidden');
-            if (img) img.src = ''; // Stop streaming for hidden cameras
+            if (img && img.hasAttribute('src')) {
+              img.removeAttribute('src'); // Stop streaming without triggering base URL fetch
+            }
           }
         });
       }
