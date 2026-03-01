@@ -2,7 +2,7 @@
 set -euo pipefail
 export PYTHONUNBUFFERED=1
 
-# Ensure system dependencies for OpenCV/Torch are installed
+# Ensure runtime shared libraries required by opencv-python are present
 if [ ! -f "/usr/lib/x86_64-linux-gnu/libGL.so.1" ]; then
     apt-get update && apt-get install -y libglib2.0-0 libgl1
 fi
