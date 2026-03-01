@@ -880,10 +880,11 @@ def upload_video():
         
         # Save to database
         video_name = request.form.get('video_name', filename)
+        location = request.form.get('location', '').strip() or 'Unspecified'
         conn = get_db_connection()
         c = conn.cursor()
         c.execute('INSERT INTO cameras (name, type, location, path) VALUES (?, ?, ?, ?)',
-                  (video_name, 'Video', 'Persistent Storage', str(upload_path)))
+                  (video_name, 'Video', location, str(upload_path)))
         cam_id = c.lastrowid
         conn.commit()
         conn.close()
