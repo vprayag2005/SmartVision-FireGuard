@@ -1,5 +1,6 @@
 import os
 import shutil
+import secrets
 import time
 import sqlite3
 import threading
@@ -11,7 +12,7 @@ try:
 except ImportError:
     pass  # Azure sets environment variables natively
 
-from flask import Flask, render_template, Response, request, redirect, url_for, flash, send_from_directory
+from flask import Flask, render_template, Response, request, redirect, url_for, flash, send_from_directory, session
 from werkzeug.utils import secure_filename
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_mail import Mail, Message
@@ -172,6 +173,60 @@ processor_errors = {}
 processors_initializing = set()
 processors_lock = threading.Lock()
 
+# Active monitoring client limiter
+MONITORING_MAX_CLIENTS = int(os.environ.get('MONITORING_MAX_CLIENTS', '10'))
+MONITORING_CLIENT_TTL_SECONDS = int(os.environ.get('MONITORING_CLIENT_TTL_SECONDS', '180'))
+monitoring_clients = {}
+monitoring_clients_lock = threading.Lock()
+
+
+def _prune_monitoring_clients_locked(now_ts: float) -> None:
+    stale_cutoff = now_ts - MONITORING_CLIENT_TTL_SECONDS
+    stale_ids = [cid for cid, seen_at in monitoring_clients.items() if seen_at < stale_cutoff]
+    for cid in stale_ids:
+        monitoring_clients.pop(cid, None)
+
+
+def _register_monitoring_client(client_id: str) -> tuple[bool, int]:
+    now_ts = time.time()
+    with monitoring_clients_lock:
+        _prune_monitoring_clients_locked(now_ts)
+        if client_id in monitoring_clients:
+            monitoring_clients[client_id] = now_ts
+            return True, len(monitoring_clients)
+        if len(monitoring_clients) >= MONITORING_MAX_CLIENTS:
+            return False, len(monitoring_clients)
+        monitoring_clients[client_id] = now_ts
+        return True, len(monitoring_clients)
+
+
+def _touch_monitoring_client(client_id: str) -> tuple[bool, int]:
+    now_ts = time.time()
+    with monitoring_clients_lock:
+        _prune_monitoring_clients_locked(now_ts)
+        if client_id in monitoring_clients:
+            monitoring_clients[client_id] = now_ts
+            return True, len(monitoring_clients)
+        if len(monitoring_clients) >= MONITORING_MAX_CLIENTS:
+            return False, len(monitoring_clients)
+        monitoring_clients[client_id] = now_ts
+        return True, len(monitoring_clients)
+
+
+def _release_monitoring_client(client_id: str | None) -> int:
+    if not client_id:
+        return _active_monitoring_client_count()
+    with monitoring_clients_lock:
+        monitoring_clients.pop(client_id, None)
+        _prune_monitoring_clients_locked(time.time())
+        return len(monitoring_clients)
+
+
+def _active_monitoring_client_count() -> int:
+    with monitoring_clients_lock:
+        _prune_monitoring_clients_locked(time.time())
+        return len(monitoring_clients)
+
 
 
 
@@ -294,6 +349,8 @@ def index():
 @app.route('/logout')
 @login_required
 def logout():
+    monitoring_client_id = session.pop('monitoring_client_id', None)
+    _release_monitoring_client(monitoring_client_id)
     logout_user()
     return redirect(url_for('index'))
 
@@ -793,13 +850,77 @@ def verify_otp():
 @login_required
 def monitoring():
     """Render the monitoring dashboard."""
+    previous_client_id = session.pop('monitoring_client_id', None)
+    _release_monitoring_client(previous_client_id)
+
+    monitoring_client_id = secrets.token_urlsafe(18)
+    allowed, active_clients = _register_monitoring_client(monitoring_client_id)
+    if not allowed:
+        return redirect(url_for('server_busy', active=active_clients, max_clients=MONITORING_MAX_CLIENTS))
+    session['monitoring_client_id'] = monitoring_client_id
+
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute('SELECT * FROM cameras')
     cameras = c.fetchall()
     conn.close()
-    return render_template('monitoring.html', cameras=cameras)
+    return render_template(
+        'monitoring.html',
+        cameras=cameras,
+        monitoring_client_id=monitoring_client_id
+    )
+
+
+@app.route('/server-busy')
+def server_busy():
+    active_clients = request.args.get('active', type=int)
+    max_clients = request.args.get('max_clients', type=int) or MONITORING_MAX_CLIENTS
+    if active_clients is None:
+        active_clients = _active_monitoring_client_count()
+    return render_template(
+        'server_busy.html',
+        active_clients=active_clients,
+        max_clients=max_clients
+    ), 503
+
+
+@app.route('/api/monitoring/heartbeat', methods=['POST'])
+@login_required
+def monitoring_heartbeat():
+    data = request.get_json(silent=True) or {}
+    client_id = data.get('client_id') or session.get('monitoring_client_id')
+    session_client_id = session.get('monitoring_client_id')
+    if not client_id:
+        return {"ok": False, "reason": "missing_client_id"}, 400
+    if session_client_id and client_id != session_client_id:
+        return {"ok": False, "reason": "invalid_client_id"}, 403
+
+    allowed, active_clients = _touch_monitoring_client(client_id)
+    if not allowed:
+        return {
+            "ok": False,
+            "reason": "capacity_reached",
+            "active_clients": active_clients,
+            "max_clients": MONITORING_MAX_CLIENTS
+        }, 429
+    return {
+        "ok": True,
+        "active_clients": active_clients,
+        "max_clients": MONITORING_MAX_CLIENTS
+    }
+
+
+@app.route('/api/monitoring/release', methods=['POST'])
+@login_required
+def monitoring_release():
+    data = request.get_json(silent=True) or {}
+    client_id = data.get('client_id') or session.get('monitoring_client_id')
+    session_client_id = session.get('monitoring_client_id')
+    if session_client_id and client_id == session_client_id:
+        session.pop('monitoring_client_id', None)
+    active_clients = _release_monitoring_client(client_id)
+    return {"ok": True, "active_clients": active_clients}
 
 @app.route('/privacy')
 def privacy():

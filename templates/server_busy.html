@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Busy | SmartVision FireGuard</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-[#0b1120] text-gray-200 flex items-center justify-center p-6">
+  <main class="w-full max-w-xl bg-[#111827] border border-[#1f2937] rounded-2xl shadow-2xl p-8">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+          <path fill-rule="evenodd" d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177A7.547 7.547 0 016.648 6.61a.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.313-1.172c.628.465 1.353.81 2.133 1a5.99 5.99 0 011.925-3.545 3.75 3.75 0 013.255 3.717z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div>
+        <div class="text-white font-bold tracking-wide">AI FIRE DETECT</div>
+        <div class="text-[11px] uppercase tracking-wider text-gray-500 font-mono">Live Monitoring</div>
+      </div>
+    </div>
+
+    <h1 class="text-2xl font-bold text-white mb-3">Server Is Busy</h1>
+    <p class="text-gray-300 leading-relaxed mb-6">
+      Maximum live monitoring capacity is currently reached. Please try again after a few minutes.
+    </p>
+
+    <div class="bg-[#0f172a] border border-[#1f2937] rounded-xl p-4 mb-6">
+      <p class="text-sm text-gray-400">Active monitoring devices: <span class="text-white font-semibold">{{ active_clients }}</span> / <span class="text-white font-semibold">{{ max_clients }}</span></p>
+    </div>
+
+    <div class="flex gap-3">
+      <a href="{{ url_for('monitoring') }}"
+         class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors">
+        Retry
+      </a>
+      <a href="{{ url_for('admin') }}"
+         class="px-4 py-2 rounded-lg border border-[#374151] bg-[#1f2937] hover:bg-[#334155] text-gray-200 text-sm font-medium transition-colors">
+        Go To Dashboard
+      </a>
+    </div>
+  </main>
+</body>
+</html>

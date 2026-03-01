@@ -655,6 +655,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     (function () {
+      const MONITORING_CLIENT_ID = "{{ monitoring_client_id|default('', true) }}";
       const selector = document.getElementById('cameraSelector');
       const log = document.querySelector('[data-testid="log-body"]');
       const fireAlarm = document.getElementById('fireAlarm');
@@ -1015,6 +1016,7 @@
       let statsRequestInFlight = false;
       let activeStatsController = null;
       let cameraConfigIntervalId = null;
+      let presenceIntervalId = null;
 
       function queueNextStatsPoll(delayMs) {
         statsRequestInFlight = false;
@@ -1161,6 +1163,47 @@
       // Initial start
       updateStats();
 
+      async function sendMonitoringHeartbeat() {
+        if (!MONITORING_CLIENT_ID) return;
+        try {
+          const response = await fetch('/api/monitoring/heartbeat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_id: MONITORING_CLIENT_ID }),
+            keepalive: true
+          });
+          if (response.status === 429) {
+            window.location.href = '/server-busy';
+          }
+        } catch (_) {
+          // Ignore transient network errors for presence updates
+        }
+      }
+
+      function startMonitoringPresence() {
+        if (!MONITORING_CLIENT_ID) return;
+        sendMonitoringHeartbeat();
+        presenceIntervalId = setInterval(sendMonitoringHeartbeat, 20000);
+      }
+
+      function releaseMonitoringPresence() {
+        if (!MONITORING_CLIENT_ID) return;
+        const payload = JSON.stringify({ client_id: MONITORING_CLIENT_ID });
+        if (navigator.sendBeacon) {
+          const blob = new Blob([payload], { type: 'application/json' });
+          navigator.sendBeacon('/api/monitoring/release', blob);
+        } else {
+          fetch('/api/monitoring/release', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload,
+            keepalive: true
+          }).catch(() => { });
+        }
+      }
+
+      startMonitoringPresence();
+
       let currentCamIds = null;
       function checkCameraConfig() {
         fetch('/api/cameras')
@@ -1181,6 +1224,11 @@
 
       window.addEventListener('pagehide', () => {
         statsPollingActive = false;
+        if (presenceIntervalId) {
+          clearInterval(presenceIntervalId);
+          presenceIntervalId = null;
+        }
+        releaseMonitoringPresence();
         if (activeStatsController) {
           activeStatsController.abort();
           activeStatsController = null;
