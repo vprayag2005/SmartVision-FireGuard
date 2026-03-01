@@ -123,39 +123,8 @@ init_db()
 processors = {}
 processors_lock = threading.Lock()
 
-def _prewarm_processors():
-    """Pre-load all camera processors synchronously.
-    With gunicorn --preload, this runs BEFORE any worker starts serving requests,
-    so the 20s GIL-hold from YOLO loading happens at startup, not during live traffic.
-    """
-    try:
-        conn = get_db_connection()
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        c.execute('SELECT * FROM cameras')
-        cams = c.fetchall()
-        conn.close()
-        for cam in cams:
-            cam_id = cam['id']
-            if Path(cam['path']).exists() and cam_id not in processors:
-                print(f"Pre-warming processor for camera {cam_id}: {cam['name']}")
-                try:
-                    processors[cam_id] = VideoProcessor(
-                        cam['path'],
-                        model_path=app.config['MODEL_PATH'],
-                        on_alert_callback=fire_alert_callback,
-                        camera_name=cam['name']
-                    )
-                    print(f"Processor ready for camera {cam_id}")
-                except Exception as e:
-                    print(f"Prewarm failed for cam {cam_id}: {e}")
-    except Exception as e:
-        print(f"Prewarm startup error: {e}")
 
-# Run SYNCHRONOUSLY at module load time.
-# With gunicorn --preload, this happens before any HTTP request is accepted.
-# This avoids the GIL-blocking issue where model loading freezes all threads mid-traffic.
-_prewarm_processors()
+
 
 
 @app.route('/health')
@@ -163,23 +132,25 @@ def health():
     return {'status': 'ok'}, 200
 
 def get_processor(cam_id):
-    # No lock here — the lock was causing ALL 24 Gunicorn threads to pile up
-    # waiting for the 20s YOLO model load, causing 504 on every endpoint.
-    # Prewarm initializes processors at startup before any browser request arrives.
+    """Return the camera processor, initializing it if not already done."""
     if cam_id not in processors:
-        conn = get_db_connection()
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        c.execute('SELECT * FROM cameras WHERE id = ?', (cam_id,))
-        cam = c.fetchone()
-        conn.close()
-        if cam and Path(cam['path']).exists():
-            processors[cam_id] = VideoProcessor(
-                cam['path'],
-                model_path=app.config['MODEL_PATH'],
-                on_alert_callback=fire_alert_callback,
-                camera_name=cam['name']
-            )
+        with processors_lock:
+            # Double-check inside lock
+            if cam_id not in processors:
+                conn = get_db_connection()
+                conn.row_factory = sqlite3.Row
+                c = conn.cursor()
+                c.execute('SELECT * FROM cameras WHERE id = ?', (cam_id,))
+                cam = c.fetchone()
+                conn.close()
+                
+                if cam and Path(cam['path']).exists():
+                    processors[cam_id] = VideoProcessor(
+                        cam['path'],
+                        model_path=app.config['MODEL_PATH'],
+                        on_alert_callback=fire_alert_callback,
+                        camera_name=cam['name']
+                    )
     return processors.get(cam_id)
 
 

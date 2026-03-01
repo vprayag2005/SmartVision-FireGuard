@@ -497,25 +497,33 @@ class VideoProcessor:
             self._inference_thread.join(timeout=2.0)
 
     def generate_frames(self):
-        """Highly efficient generator — waits for new frames using Condition signaling."""
+        """Highly efficient generator — waits for new frames using Condition signaling.
+        If no new frame arrives within 1 second, it yields the last known frame anyway 
+        to detect if the client (browser) has disconnected, preventing thread leaks."""
         self.last_access_time = time.time()
         last_seq = -1
         while self.running:
             self.last_access_time = time.time() # Update on every frame request
             jpeg = None
             with self.lock:
+                waited_iters = 0
                 # Wait for a NEW frame sequence number or stop signal
-                while self.running and self._frame_seq == last_seq:
+                while self.running and self._frame_seq == last_seq and waited_iters < 10:
                     # Timeout prevents deadlocks if the reader thread stalls
                     self.lock.wait(timeout=0.1)
+                    waited_iters += 1
                 
                 if not self.running:
                     break
                 
-                if self._frame_seq != last_seq:
-                    jpeg = self.latest_jpeg
-                    last_seq = self._frame_seq
+                # Even if _frame_seq == last_seq, we still yield self.latest_jpeg
+                # after 1 second of waiting, to ensure the connection is checked
+                jpeg = self.latest_jpeg
+                last_seq = self._frame_seq
             
             if jpeg:
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + jpeg + b'\r\n')
+            else:
+                time.sleep(0.1)
+
