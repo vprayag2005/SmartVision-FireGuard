@@ -112,13 +112,18 @@ class VideoProcessor:
             except Exception as e:
                 print(f"Model load error: {e}")
 
-        # Single background thread — owns VideoCapture for the lifetime of this processor
+        # Start worker threads
         self._reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
+        self._inference_thread = threading.Thread(target=self._inference_loop, daemon=True)
+        
         self._reader_thread.start()
+        self._inference_thread.start()
 
     def _process_detections(self, result: Results) -> Results:
         if result.boxes is None or len(result.boxes) == 0:
             with self.lock:
+                self.inference_stats['fire_conf'] = 0.0
+                self.inference_stats['smoke_conf'] = 0.0
                 self.inference_stats['fire_area'] = 0.0
                 self.inference_stats['smoke_area'] = 0.0
             return result
@@ -290,7 +295,7 @@ class VideoProcessor:
                 print(f"Alert callback error: {e}")
 
     def _reader_loop(self) -> None:
-        """Single background thread: owns VideoCapture, runs inference, writes shared JPEG."""
+        """Background thread 1: Owns VideoCapture, strictly handles frame reading and MJPEG encoding."""
         cap = cv2.VideoCapture(str(self.video_path))
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         interval = 1.0 / fps
@@ -304,29 +309,13 @@ class VideoProcessor:
                     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                     continue
 
-                # Store raw frame for inference
+                # Store raw frame for the inference thread to pick up
+                # We use a non-blocking check to update current_frame
                 with self.lock:
-                    self.current_frame = frame
+                    self.current_frame = frame  # Store the object, don't copy yet
+                    result = self.latest_result
 
-                # Run inference if model is available
-                result = None
-                if self.model:
-                    try:
-                        t0 = time.time()
-                        results = self.model.predict(frame, conf=self.conf_threshold, iou=0.5, verbose=False)
-                        latency = (time.time() - t0) * 1000
-                        if results:
-                            result = self._process_detections(results[0])
-                            with self.lock:
-                                self.latest_result = result
-                                self.inference_stats['latency'] = int(latency)
-                            self._update_logs()
-                    except Exception as e:
-                        print(f"Inference error: {e}")
-
-                self._sample_temporal_window()
-
-                # Annotate and encode to JPEG once — shared by all clients
+                # Annotate using the MOST RECENT available AI result (might be a few frames old)
                 output = result.plot(img=frame) if result else frame
                 ret, buf = cv2.imencode('.jpg', output, [cv2.IMWRITE_JPEG_QUALITY, 70])
                 if ret:
@@ -334,13 +323,58 @@ class VideoProcessor:
                         self.latest_jpeg = buf.tobytes()
                         self._frame_seq += 1
 
-                # Pace to video FPS
+                self._sample_temporal_window()
+
+                # Pace to video FPS to keep the stream smooth
                 elapsed = time.time() - loop_start
                 sleep_time = interval - elapsed
                 if sleep_time > 0:
                     time.sleep(sleep_time)
         finally:
             cap.release()
+
+    def _inference_loop(self) -> None:
+        """Background thread 2: Strictly handles YOLO inference on the latest available frame."""
+        # Warm up the model (already done in __init__, but good to be safe)
+        if not self.model:
+            return
+
+        while self.running:
+            frame_to_process = None
+            with self.lock:
+                if self.current_frame is not None:
+                    # Capture a copy only when we are actually going to process it
+                    # This reduces memory pressure on the B1 instance
+                    frame_to_process = self.current_frame.copy()
+
+            if frame_to_process is not None:
+                try:
+                    t0 = time.time()
+                    
+                    # Optimization: Use imgsz=320 to significantly reduce CPU load
+                    results = self.model.predict(
+                        frame_to_process, 
+                        conf=self.conf_threshold, 
+                        iou=0.45, 
+                        imgsz=320, 
+                        verbose=False
+                    )
+                    
+                    latency = (time.time() - t0) * 1000
+                    
+                    if results:
+                        # Process and update shared results
+                        processed_result = self._process_detections(results[0])
+                        with self.lock:
+                            self.latest_result = processed_result
+                            self.inference_stats['latency'] = int(latency)
+                        
+                        self._update_logs()
+                except Exception as e:
+                    print(f"Inference error: {e}")
+            
+            # Small yield to prevent CPU pinning if inference is somehow instant
+            time.sleep(0.01)
 
     def _update_logs(self) -> None:
         current_time = time.time()
@@ -381,10 +415,12 @@ class VideoProcessor:
             }
 
     def stop(self):
-        """Signal the background thread to stop and wait for it."""
+        """Signal the background threads to stop and wait for them."""
         self.running = False
         if hasattr(self, '_reader_thread') and self._reader_thread.is_alive():
-            self._reader_thread.join(timeout=3.0)
+            self._reader_thread.join(timeout=2.0)
+        if hasattr(self, '_inference_thread') and self._inference_thread.is_alive():
+            self._inference_thread.join(timeout=2.0)
 
     def generate_frames(self):
         """Lightweight generator — reads the shared JPEG buffer, never touches VideoCapture."""
