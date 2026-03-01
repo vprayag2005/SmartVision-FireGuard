@@ -69,7 +69,7 @@ class VideoProcessor:
         self.on_alert_callback = on_alert_callback  # callable(event: str, cam_name: str) | None
         self.camera_name = camera_name
         self.running = True
-        self.lock = threading.Lock()
+        self.lock = threading.Condition()
 
         self.model = None
         self.latest_result: Optional[Results] = None
@@ -322,6 +322,7 @@ class VideoProcessor:
                     with self.lock:
                         self.latest_jpeg = buf.tobytes()
                         self._frame_seq += 1
+                        self.lock.notify_all()  # Wake up all streaming clients
 
                 self._sample_temporal_window()
 
@@ -423,16 +424,23 @@ class VideoProcessor:
             self._inference_thread.join(timeout=2.0)
 
     def generate_frames(self):
-        """Lightweight generator — reads the shared JPEG buffer, never touches VideoCapture."""
+        """Highly efficient generator — waits for new frames using Condition signaling."""
         last_seq = -1
         while self.running:
+            jpeg = None
             with self.lock:
-                seq = self._frame_seq
-                jpeg = self.latest_jpeg if seq != last_seq else None
-                if seq != last_seq:
-                    last_seq = seq
+                # Wait for a NEW frame sequence number or stop signal
+                while self.running and self._frame_seq == last_seq:
+                    # Timeout prevents deadlocks if the reader thread stalls
+                    self.lock.wait(timeout=0.1)
+                
+                if not self.running:
+                    break
+                
+                if self._frame_seq != last_seq:
+                    jpeg = self.latest_jpeg
+                    last_seq = self._frame_seq
+            
             if jpeg:
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + jpeg + b'\r\n')
-            else:
-                time.sleep(0.005)  # 5 ms poll — keeps CPU low while staying responsive
