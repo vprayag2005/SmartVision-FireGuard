@@ -1016,7 +1016,15 @@
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s watchdog for the fetch
 
-        fetch('/api/stats/' + activeCamId, { signal: controller.signal })
+        const fetchUrl = '/api/stats/' + activeCamId + '?_t=' + Date.now();
+        fetch(fetchUrl, {
+          signal: controller.signal,
+          cache: 'no-store',
+          headers: {
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache'
+          }
+        })
           .then(response => {
             clearTimeout(timeoutId);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
