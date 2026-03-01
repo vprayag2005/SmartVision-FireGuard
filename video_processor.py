@@ -58,6 +58,12 @@ class VideoProcessor:
     TEMPORAL_WINDOW = 30
     FIRE_TRIGGER_SECONDS = 10
     CONF_DETECTION_MIN = 0.10
+    
+    # Shared class-level YOLO model (Singleton pattern) to save RAM
+    _shared_model = None
+    _fire_cls_id = 0
+    _smoke_cls_id = 1
+    _model_lock = threading.Lock()
 
     def __init__(self, video_path: str, model_path: Optional[str] = None, conf_threshold: float = 0.35,
                  on_alert_callback=None, camera_name: str = 'Unknown Camera'):
@@ -101,30 +107,41 @@ class VideoProcessor:
             'risk_score': 0.0
         }
 
-        # Dynamic class mapping
-        self.fire_cls_id = 0
-        self.smoke_cls_id = 1
+        # Lazy load the shared model if not already done
+        if model_path and YOLO_AVAILABLE:
+            with VideoProcessor._model_lock:
+                if VideoProcessor._shared_model is None:
+                    try:
+                        print(f"Loading shared model: {model_path}")
+                        VideoProcessor._shared_model = YOLO(model_path)
+                        
+                        # Inspect and map classes once
+                        if hasattr(VideoProcessor._shared_model, 'names'):
+                            names = VideoProcessor._shared_model.names
+                            print(f"Shared Model classes: {names}")
+                            for idx, name in names.items():
+                                if name.lower() == 'fire': VideoProcessor._fire_cls_id = idx
+                                if name.lower() == 'smoke': VideoProcessor._smoke_cls_id = idx
+                        
+                        # Warm up
+                        VideoProcessor._shared_model.predict(
+                            source=np.zeros((640, 640, 3), dtype=np.uint8), 
+                            verbose=False, imgsz=640
+                        )
+                    except Exception as e:
+                        print(f"Shared model load error: {e}")
+        
+        self.model = VideoProcessor._shared_model
+        # Use class-level IDs
+        self.fire_cls_id = VideoProcessor._fire_cls_id
+        self.smoke_cls_id = VideoProcessor._smoke_cls_id
+
         self.last_access_time = time.time()
         self.passive_mode = False
 
-        # Shared JPEG buffer — written by _reader_loop, read by all generate_frames() callers
-        self.latest_jpeg: Optional[bytes] = None
-        self._frame_seq: int = 0  # incremented each time a new JPEG is ready
-
-        if model_path and YOLO_AVAILABLE:
-            try:
-                self.model = YOLO(model_path)
-                print(f"Model loaded: {model_path}")
-                # Inspect model classes
-                if hasattr(self.model, 'names'):
-                    names = self.model.names
-                    print(f"Model classes: {names}")
-                    for idx, name in names.items():
-                        if name.lower() == 'fire': self.fire_cls_id = idx
-                        if name.lower() == 'smoke': self.smoke_cls_id = idx
-                self.model.predict(source=np.zeros((640, 640, 3), dtype=np.uint8), verbose=False, imgsz=640)
-            except Exception as e:
-                print(f"Model load error: {e}")
+        # Shared JPEG buffer
+        self.latest_jpeg = None
+        self._frame_seq = 0
 
         # Start worker threads
         self._reader_thread = threading.Thread(target=self._reader_loop, daemon=True)

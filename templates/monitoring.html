@@ -1003,17 +1003,30 @@
         previousFireConfirmed = isConfirmed;
       }
 
+      let statsPollingActive = true;
       function updateStats() {
-        const activeCamId = selector ? selector.value.replace('cam', '') : null;
-        if (!activeCamId) return;
+        if (!statsPollingActive) return;
 
-        fetch('/api/stats/' + activeCamId)
+        const activeCamId = selector ? selector.value.replace('cam', '') : null;
+        if (!activeCamId) {
+          setTimeout(updateStats, 1000);
+          return;
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s watchdog for the fetch
+
+        fetch('/api/stats/' + activeCamId, { signal: controller.signal })
           .then(response => {
+            clearTimeout(timeoutId);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             return response.json();
           })
           .then(data => {
-            if (!data) return;
+            if (!data) {
+              setTimeout(updateStats, 1000);
+              return;
+            }
 
             // Update Debug Overlay
             const debugContent = document.getElementById('debugContent');
@@ -1080,11 +1093,18 @@
             if (alertActive && audioUnlocked && fireAlarm.paused) {
               fireAlarm.play().catch(() => { });
             }
+
+            // Queue next poll
+            setTimeout(updateStats, 1000);
           })
-          .catch(err => console.error('Error fetching stats:', err));
+          .catch(err => {
+            console.error('Error fetching stats:', err);
+            // Queue next poll even on error
+            setTimeout(updateStats, 2000);
+          });
       }
 
-      setInterval(updateStats, 1000);
+      // Initial start
       updateStats();
 
       let currentCamIds = null;
