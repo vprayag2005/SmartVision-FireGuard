@@ -634,18 +634,6 @@
       </div>
     </div>
   </div>
-
-  <!-- DEBUG OVERLAY (Hidden, toggle with 'D') -->
-  <div id="debugOverlay"
-    class="fixed bottom-6 right-6 z-[3000] hidden bg-black/95 border border-blue-500/50 rounded-xl p-4 font-mono text-[10px] text-blue-400 shadow-2xl w-[320px] max-h-[400px] overflow-auto">
-    <div class="flex justify-between items-center mb-2 border-b border-blue-500/30 pb-2">
-      <span class="font-bold text-white tracking-widest uppercase">Console Debugger</span>
-      <button onclick="document.getElementById('debugOverlay').classList.add('hidden')"
-        class="text-white hover:text-red-400">×</button>
-    </div>
-    <div id="debugContent" class="space-y-1">Awaiting data...</div>
-  </div>
-
   <script>
     function openDeleteModal() {
       const m = document.getElementById('deleteAccountModal');
@@ -660,14 +648,6 @@
     // Close on backdrop click
     document.getElementById('deleteAccountModal').addEventListener('click', function (e) {
       if (e.target === this) closeDeleteModal();
-    });
-
-    // Debug Overlay Toggle (Press 'D')
-    document.addEventListener('keydown', function (e) {
-      if (e.key.toLowerCase() === 'd') {
-        const overlay = document.getElementById('debugOverlay');
-        overlay.classList.toggle('hidden');
-      }
     });
   </script>
 
@@ -743,6 +723,29 @@
             }
           }
         });
+      }
+
+      function toLocalClockLabel(value, ts) {
+        if (typeof ts === 'number' && Number.isFinite(ts)) {
+          return new Date(ts).toLocaleTimeString([], {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          });
+        }
+        if (typeof value === 'string' && value.includes('T')) {
+          const parsed = new Date(value);
+          if (!Number.isNaN(parsed.getTime())) {
+            return parsed.toLocaleTimeString([], {
+              hour12: false,
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            });
+          }
+        }
+        return value || '--:--:--';
       }
 
       if (selector) {
@@ -1072,12 +1075,6 @@
               statusEl.className = 'text-xs font-mono text-green-400';
             }
 
-            // Update Debug Overlay
-            const debugContent = document.getElementById('debugContent');
-            if (debugContent && !document.getElementById('debugOverlay').classList.contains('hidden')) {
-              debugContent.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-            }
-
             const metrics = data.metrics;
             if (metrics) {
               const camKey = selector ? selector.value : null;
@@ -1109,7 +1106,7 @@
                 div.className = `grid grid-cols-[86px_1fr] gap-2.5 p-2.5 border ${borderClass} rounded-xl ${bgClass} mb-2`;
                 div.setAttribute('data-testid', `log-line-${index}`);
                 div.innerHTML = `
-                  <div class="font-mono text-[11px] tracking-wider ${timeColor}">${entry.time}</div>
+                  <div class="font-mono text-[11px] tracking-wider ${timeColor}">${toLocalClockLabel(entry.time, entry.ts)}</div>
                   <div class="font-mono text-xs ${msgColor} leading-snug">${entry.msg}</div>
                 `;
                 log.appendChild(div);
@@ -1126,7 +1123,7 @@
               const currentIsMobile = window.innerWidth < 768;
               const displayHistory = currentIsMobile ? history.slice(-10) : history;
 
-              growthChart.data.labels = displayHistory.map(h => h.time);
+              growthChart.data.labels = displayHistory.map(h => toLocalClockLabel(h.time, h.ts));
               growthChart.data.datasets[0].data = displayHistory.map(h => h.fire_area);
               growthChart.data.datasets[1].data = displayHistory.map(h => h.smoke_area);
               growthChart.update();

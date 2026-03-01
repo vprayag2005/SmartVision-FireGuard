@@ -151,6 +151,11 @@ class VideoProcessor:
         self._reader_thread.start()
         self._inference_thread.start()
 
+    @staticmethod
+    def _now_ms() -> int:
+        """Unix timestamp in milliseconds for client-side local time rendering."""
+        return int(time.time() * 1000)
+
     def _process_detections(self, result: Results) -> Results:
         if result.boxes is None or len(result.boxes) == 0:
             with self.lock:
@@ -339,8 +344,10 @@ class VideoProcessor:
                 # Power-saving Passive Mode: If not accessed for 30s, slow down significantly
                 if (time.time() - self.last_access_time) > 30.0:
                     if not self.passive_mode:
-                        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+                        ts_ms = self._now_ms()
+                        timestamp = datetime.datetime.fromtimestamp(ts_ms / 1000).strftime("%H:%M:%S")
                         self.logs.appendleft({
+                            'ts': ts_ms,
                             'time': timestamp,
                             'msg': "[SYSTEM] Idle detected. Entering CPU-Save mode.",
                             'type': 'normal'
@@ -349,8 +356,10 @@ class VideoProcessor:
                     time.sleep(5.0) 
                 else:
                     if self.passive_mode:
-                        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+                        ts_ms = self._now_ms()
+                        timestamp = datetime.datetime.fromtimestamp(ts_ms / 1000).strftime("%H:%M:%S")
                         self.logs.appendleft({
+                            'ts': ts_ms,
                             'time': timestamp,
                             'msg': "[SYSTEM] Activity detected. Resuming Active Mode.",
                             'type': 'normal'
@@ -428,17 +437,6 @@ class VideoProcessor:
                         with self.lock:
                             self.latest_result = processed_result
                             self.inference_stats['latency'] = int(latency)
-                            
-                            # Immediate debug logging for detections
-                            fire_conf = self.inference_stats['fire_conf']
-                            smoke_conf = self.inference_stats['smoke_conf']
-                            if fire_conf > self.CONF_DETECTION_MIN or smoke_conf > self.CONF_DETECTION_MIN:
-                                timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-                                self.logs.appendleft({
-                                    'time': timestamp,
-                                    'msg': f"[DEBUG] Detection: Fire {fire_conf*100:.1f}%, Smoke {smoke_conf*100:.1f}%",
-                                    'type': 'alert'
-                                })
                         
                         self._update_logs()
                 except Exception as e:
@@ -451,7 +449,8 @@ class VideoProcessor:
         current_time = time.time()
 
         if (current_time - self.last_log_time) > 29.9:
-            timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+            ts_ms = self._now_ms()
+            timestamp = datetime.datetime.fromtimestamp(ts_ms / 1000).strftime("%H:%M:%S")
 
             with self.lock:
                 fire = self.inference_stats['fire_conf'] * 100
@@ -460,6 +459,7 @@ class VideoProcessor:
                 smoke_area = self.inference_stats['smoke_area']
 
                 self.area_history.append({
+                    'ts': ts_ms,
                     'time': timestamp,
                     'fire_area': fire_area,
                     'smoke_area': smoke_area
@@ -470,6 +470,7 @@ class VideoProcessor:
                 msg = f"Inference • Fire: {fire:.1f}% • Smoke: {smoke:.1f}%"
 
                 self.logs.appendleft({
+                    'ts': ts_ms,
                     'time': timestamp,
                     'msg': msg,
                     'type': log_type
