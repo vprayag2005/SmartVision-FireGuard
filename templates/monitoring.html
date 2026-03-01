@@ -208,7 +208,7 @@
             <!-- Video Container -->
             <div class="w-full flex-1 min-h-0 flex items-center justify-center bg-black overflow-hidden" role="img"
               aria-label="Video feed">
-              <img src="{{ url_for('video_feed', cam_id=cam.id) }}"
+              <img data-src="{{ url_for('video_feed', cam_id=cam.id) }}" src=""
                 onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%\' height=\'100%\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><path d=\'M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a1.5 1.5 0 100-3 1.5 1.5 0 000 3z\' fill=\'%23374151\' transform=\'translate(460, 180) scale(4)\'/><text x=\'50%\' y=\'65%\' font-family=\'system-ui, sans-serif\' font-size=\'18\' font-weight=\'600\' fill=\'%236b7280\' text-anchor=\'middle\' dominant-baseline=\'middle\'>AWAITING VIDEO STREAM...</text></svg>'; this.onerror=null;"
                 class="w-full h-full max-h-full block object-contain object-center" alt="Live Camera Feed"
                 style="max-height: 100%;">
@@ -727,9 +727,18 @@
       }
 
       function showCamera(camId) {
-        document.querySelectorAll('[data-camera]').forEach(el => el.classList.add('hidden'));
-        const selected = document.querySelector('[data-camera="' + camId + '"]');
-        if (selected) selected.classList.remove('hidden');
+        document.querySelectorAll('[data-camera]').forEach(el => {
+          const img = el.querySelector('img');
+          if (el.getAttribute('data-camera') === camId) {
+            el.classList.remove('hidden');
+            if (img && img.getAttribute('data-src') && img.src !== img.getAttribute('data-src')) {
+              img.src = img.getAttribute('data-src');
+            }
+          } else {
+            el.classList.add('hidden');
+            if (img) img.src = ''; // Stop streaming for hidden cameras
+          }
+        });
       }
 
       if (selector) {

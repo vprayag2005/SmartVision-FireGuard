@@ -104,6 +104,8 @@ class VideoProcessor:
         # Dynamic class mapping
         self.fire_cls_id = 0
         self.smoke_cls_id = 1
+        self.last_access_time = time.time()
+        self.passive_mode = False
 
         # Shared JPEG buffer — written by _reader_loop, read by all generate_frames() callers
         self.latest_jpeg: Optional[bytes] = None
@@ -316,6 +318,27 @@ class VideoProcessor:
             while self.running:
                 loop_start = time.time()
 
+                # Power-saving Passive Mode: If not accessed for 30s, slow down significantly
+                if (time.time() - self.last_access_time) > 30.0:
+                    if not self.passive_mode:
+                        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+                        self.logs.appendleft({
+                            'time': timestamp,
+                            'msg': "[SYSTEM] Idle detected. Entering CPU-Save mode.",
+                            'type': 'normal'
+                        })
+                        self.passive_mode = True
+                    time.sleep(5.0) 
+                else:
+                    if self.passive_mode:
+                        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+                        self.logs.appendleft({
+                            'time': timestamp,
+                            'msg': "[SYSTEM] Activity detected. Resuming Active Mode.",
+                            'type': 'normal'
+                        })
+                        self.passive_mode = False
+
                 success, frame = cap.read()
                 if not success:
                     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -353,6 +376,10 @@ class VideoProcessor:
             return
 
         while self.running:
+            if self.passive_mode:
+                time.sleep(1.0)
+                continue
+
             frame_to_process = None
             with self.lock:
                 if self.current_frame is not None:
@@ -430,6 +457,7 @@ class VideoProcessor:
             self.last_log_time = current_time
 
     def get_stats(self) -> Dict[str, Any]:
+        self.last_access_time = time.time() # Keeps it alive
         with self.lock:
             # Return copies to prevent race conditions during JSON serialization
             return {
@@ -449,8 +477,10 @@ class VideoProcessor:
 
     def generate_frames(self):
         """Highly efficient generator — waits for new frames using Condition signaling."""
+        self.last_access_time = time.time()
         last_seq = -1
         while self.running:
+            self.last_access_time = time.time() # Update on every frame request
             jpeg = None
             with self.lock:
                 # Wait for a NEW frame sequence number or stop signal
