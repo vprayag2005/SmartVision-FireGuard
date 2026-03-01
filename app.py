@@ -5,7 +5,7 @@ import threading
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, render_template, Response, request, redirect, url_for, flash
+from flask import Flask, render_template, Response, request, redirect, url_for, flash, send_from_directory
 from werkzeug.utils import secure_filename
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_mail import Mail, Message
@@ -38,22 +38,83 @@ login_manager.login_view = 'index'
 app.config['VIDEO_PATH'] = Path(app.root_path) / 'static' / 'video' / 'cctv_demo_detection.mp4'
 app.config['MODEL_PATH'] = Path(app.root_path) / 'models' / 'best.pt'
 
-def resolve_db_path() -> Path:
-    env_path = os.environ.get('DATABASE_PATH')
-    if env_path:
-        return Path(env_path)
+def resolve_data_dir() -> Path:
+    """Resolve the persistent data directory based on environment."""
     if os.name != 'nt':
         home = os.environ.get('HOME')
         if home:
-            return Path(home) / 'site' / 'data' / 'database.db'
-    return Path(app.root_path) / 'database.db'
+            # Azure App Service persistent storage mount
+            return Path(home) / 'site' / 'data'
+    # Fallback to local .data directory for development
+    local_data = Path(app.root_path) / '.data'
+    return local_data
 
-DB_PATH = resolve_db_path()
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-print(f"Using database path: {DB_PATH}")
+DATA_DIR = resolve_data_dir()
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+DB_PATH = DATA_DIR / 'database.db'
+UPLOADS_DIR = DATA_DIR / 'uploads'
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+print(f"Using persistent data directory: {DATA_DIR}")
+print(f"Database path: {DB_PATH}")
 
 def get_db_connection() -> sqlite3.Connection:
     return sqlite3.connect(DB_PATH)
+
+def init_db():
+    """Ensure database schema and default data exist in persistent storage."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # Create tables if they don't exist
+    c.execute('''CREATE TABLE IF NOT EXISTS cameras (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        location TEXT NOT NULL,
+        path TEXT NOT NULL
+    )''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL,
+        is_verified BOOLEAN NOT NULL DEFAULT 0
+    )''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS otps (
+        email TEXT PRIMARY KEY,
+        otp TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL,
+        expires_at REAL NOT NULL
+    )''')
+    
+    # Check if we have an admin user
+    admin_email = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
+    c.execute('SELECT * FROM users WHERE email = ?', (admin_email,))
+    if not c.fetchone():
+        print(f"Initializing default admin user: {admin_email}")
+        admin_pass = os.environ.get('ADMIN_PASSWORD', 'admin123')
+        c.execute('INSERT INTO users (email, password_hash, role, is_verified) VALUES (?, ?, ?, 1)',
+                  (admin_email, hash_password(admin_pass), 'Admin'))
+    
+    # Check if we have the default demo camera
+    c.execute('SELECT * FROM cameras WHERE name = ?', ('Demo CCTV',))
+    if not c.fetchone():
+        demo_path = str(Path(app.root_path) / 'static' / 'video' / 'cctv_demo_detection.mp4')
+        if Path(demo_path).exists():
+            print("Initializing default demo camera")
+            c.execute('INSERT INTO cameras (name, type, location, path) VALUES (?, ?, ?, ?)',
+                      ('Demo CCTV', 'Video', 'Building A', demo_path))
+    
+    conn.commit()
+    conn.close()
+
+# Initialize DB on startup
+init_db()
 
 # Global video processors mapping
 processors = {}
@@ -750,12 +811,9 @@ def upload_video():
         return "No selected file", 400
         
     if file:
-        # Save the file securely into the 'uploads' subdirectory
+        # Save the file securely into the persistent uploads directory
         filename = secure_filename(file.filename)
-        uploads_dir = Path(app.root_path) / 'static' / 'video' / 'uploads'
-        uploads_dir.mkdir(exist_ok=True, parents=True)
-        
-        upload_path = uploads_dir / filename
+        upload_path = UPLOADS_DIR / filename
         file.save(upload_path)
         
         # Save to database
@@ -763,7 +821,7 @@ def upload_video():
         conn = get_db_connection()
         c = conn.cursor()
         c.execute('INSERT INTO cameras (name, type, location, path) VALUES (?, ?, ?, ?)',
-                  (video_name, 'Video', upload_path.name, str(upload_path)))
+                  (video_name, 'Video', 'Persistent Storage', str(upload_path)))
         cam_id = c.lastrowid
         conn.commit()
         conn.close()
@@ -831,6 +889,12 @@ def delete_camera(cam_id):
                 
     conn.close()
     return redirect(url_for('admin'))
+
+@app.route('/uploads/<path:filename>')
+@login_required
+def serve_upload(filename):
+    """Serve uploaded video files from the persistent storage directory."""
+    return send_from_directory(str(UPLOADS_DIR), filename)
 
 @app.route('/api/cameras')
 @login_required
