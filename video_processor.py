@@ -98,7 +98,12 @@ class VideoProcessor:
             'persistence_max': self.TEMPORAL_WINDOW,
             'fire_confidence_stability': 1.0,
             'spatial_trend': 'stable',
+            'risk_score': 0.0
         }
+
+        # Dynamic class mapping
+        self.fire_cls_id = 0
+        self.smoke_cls_id = 1
 
         # Shared JPEG buffer — written by _reader_loop, read by all generate_frames() callers
         self.latest_jpeg: Optional[bytes] = None
@@ -108,6 +113,13 @@ class VideoProcessor:
             try:
                 self.model = YOLO(model_path)
                 print(f"Model loaded: {model_path}")
+                # Inspect model classes
+                if hasattr(self.model, 'names'):
+                    names = self.model.names
+                    print(f"Model classes: {names}")
+                    for idx, name in names.items():
+                        if name.lower() == 'fire': self.fire_cls_id = idx
+                        if name.lower() == 'smoke': self.smoke_cls_id = idx
                 self.model.predict(source=np.zeros((640, 640, 3), dtype=np.uint8), verbose=False, imgsz=640)
             except Exception as e:
                 print(f"Model load error: {e}")
@@ -157,10 +169,10 @@ class VideoProcessor:
                 area_px = width * height
                 area_norm = (area_px / total_pixels) * 100.0
 
-                if cls_id == 0:
+                if cls_id == self.fire_cls_id:
                     max_fire_conf = max(max_fire_conf, conf)
                     max_fire_area = max(max_fire_area, area_norm)
-                elif cls_id == 1:
+                elif cls_id == self.smoke_cls_id:
                     max_smoke_conf = max(max_smoke_conf, conf)
                     max_smoke_area = max(max_smoke_area, area_norm)
 
@@ -369,6 +381,17 @@ class VideoProcessor:
                         with self.lock:
                             self.latest_result = processed_result
                             self.inference_stats['latency'] = int(latency)
+                            
+                            # Immediate debug logging for detections
+                            fire_conf = self.inference_stats['fire_conf']
+                            smoke_conf = self.inference_stats['smoke_conf']
+                            if fire_conf > self.CONF_DETECTION_MIN or smoke_conf > self.CONF_DETECTION_MIN:
+                                timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+                                self.logs.appendleft({
+                                    'time': timestamp,
+                                    'msg': f"[DEBUG] Detection: Fire {fire_conf*100:.1f}%, Smoke {smoke_conf*100:.1f}%",
+                                    'type': 'alert'
+                                })
                         
                         self._update_logs()
                 except Exception as e:
@@ -408,11 +431,12 @@ class VideoProcessor:
 
     def get_stats(self) -> Dict[str, Any]:
         with self.lock:
+            # Return copies to prevent race conditions during JSON serialization
             return {
-                'metrics': self.inference_stats,
+                'metrics': self.inference_stats.copy(),
                 'logs': list(self.logs),
                 'growth_history': list(self.area_history),
-                'temporal_status': dict(self.temporal_status),
+                'temporal_status': self.temporal_status.copy(),
             }
 
     def stop(self):
