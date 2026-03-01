@@ -151,10 +151,12 @@
             <span class="hidden sm:inline">AI Monitoring Console</span>
             <span class="sm:hidden">AI Console</span>
           </h1>
-          <div class="text-[10px] sm:text-xs md:text-xs text-gray-400 font-medium leading-tight mt-0.5 truncate"
+          <div
+            class="text-[10px] sm:text-xs md:text-xs text-gray-400 font-medium leading-tight mt-0.5 flex items-center gap-2 truncate"
             data-testid="text-subtitle">
             <span class="hidden sm:inline">Real-time Fire &amp; Smoke Detection System</span>
             <span class="sm:hidden">Fire &amp; Smoke System</span>
+            <span id="ai-status" class="text-xs font-mono text-yellow-400 animate-pulse">⟳ AI warming up…</span>
           </div>
         </div>
       </div>
@@ -1016,7 +1018,7 @@
         }
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s watchdog for the fetch
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s — model load can take up to 20s on Azure B1
 
         const fetchUrl = '/api/stats/' + activeCamId + '?_t=' + Date.now();
         fetch(fetchUrl, {
@@ -1033,6 +1035,12 @@
             return response.json();
           })
           .then(data => {
+            // Mark AI as live on first successful response
+            const statusEl = document.getElementById('ai-status');
+            if (statusEl) {
+              statusEl.textContent = '● Live';
+              statusEl.className = 'text-xs font-mono text-green-400';
+            }
             if (!data) {
               setTimeout(updateStats, 1000);
               return;
@@ -1109,6 +1117,11 @@
           })
           .catch(err => {
             console.error('Error fetching stats:', err);
+            const statusEl = document.getElementById('ai-status');
+            if (statusEl && statusEl.textContent !== '● Live') {
+              statusEl.textContent = '⟳ AI warming up…';
+              statusEl.className = 'text-xs font-mono text-yellow-400 animate-pulse';
+            }
             // Queue next poll even on error
             setTimeout(updateStats, 2000);
           });

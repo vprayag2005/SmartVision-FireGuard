@@ -14,6 +14,6 @@ fi
 PORT_TO_USE="${PORT:-${WEBSITES_PORT:-8000}}"
 echo "Starting SmartVision Guard on port: ${PORT_TO_USE}"
 
-exec gunicorn --bind 0.0.0.0:${PORT_TO_USE} --timeout 120 --workers 1 --threads 24 \
+exec gunicorn --bind 0.0.0.0:${PORT_TO_USE} --timeout 120 --workers 1 --threads 24 --preload \
   --access-logfile - --error-logfile - --capture-output --log-level info \
   app:app
