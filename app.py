@@ -674,12 +674,17 @@ def init_db():
     # Create default Admin if no users exist
     c.execute('SELECT COUNT(*) FROM users')
     if c.fetchone()[0] == 0:
-        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@system.ai')
-        admin_password = os.environ.get('ADMIN_PASSWORD', 'Admin@123')
-        admin_pass_hash = hash_password(admin_password)
-        c.execute('INSERT INTO users (email, password_hash, role, is_verified) VALUES (?, ?, ?, ?)',
-                  (admin_email, admin_pass_hash, 'Admin', True))
-        print(f"Created default admin: {admin_email}")
+        admin_email = os.environ.get('ADMIN_EMAIL')
+        admin_password = os.environ.get('ADMIN_PASSWORD')
+        
+        if admin_email and admin_password:
+            admin_pass_hash = hash_password(admin_password)
+            c.execute('INSERT INTO users (email, password_hash, role, is_verified) VALUES (?, ?, ?, ?)',
+                      (admin_email, admin_pass_hash, 'Admin', True))
+            print(f"Created default admin: {admin_email}")
+        else:
+            print("WARNING: No users found and ADMIN_EMAIL/ADMIN_PASSWORD not set. Admin account NOT created.")
+
     
     conn.commit()
     conn.close()
