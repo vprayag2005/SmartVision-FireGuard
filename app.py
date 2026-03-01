@@ -121,6 +121,8 @@ init_db()
 
 # Global video processors mapping
 processors = {}
+processor_errors = {}
+processors_initializing = set()
 processors_lock = threading.Lock()
 
 
@@ -131,27 +133,73 @@ processors_lock = threading.Lock()
 def health():
     return {'status': 'ok'}, 200
 
-def get_processor(cam_id):
-    """Return the camera processor, initializing it if not already done."""
-    if cam_id not in processors:
+def _init_processor(cam_id):
+    """Create a processor in a background thread and record any initialization error."""
+    try:
+        conn = get_db_connection()
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute('SELECT * FROM cameras WHERE id = ?', (cam_id,))
+        cam = c.fetchone()
+        conn.close()
+
+        if not cam:
+            raise RuntimeError(f"Camera {cam_id} not found in database")
+
+        video_path = Path(cam['path'])
+        if not video_path.exists():
+            raise FileNotFoundError(f"Video file not found for camera {cam_id}: {video_path}")
+
+        processor = VideoProcessor(
+            str(video_path),
+            model_path=app.config['MODEL_PATH'],
+            on_alert_callback=fire_alert_callback,
+            camera_name=cam['name']
+        )
         with processors_lock:
-            # Double-check inside lock
-            if cam_id not in processors:
-                conn = get_db_connection()
-                conn.row_factory = sqlite3.Row
-                c = conn.cursor()
-                c.execute('SELECT * FROM cameras WHERE id = ?', (cam_id,))
-                cam = c.fetchone()
-                conn.close()
-                
-                if cam and Path(cam['path']).exists():
-                    processors[cam_id] = VideoProcessor(
-                        cam['path'],
-                        model_path=app.config['MODEL_PATH'],
-                        on_alert_callback=fire_alert_callback,
-                        camera_name=cam['name']
-                    )
-    return processors.get(cam_id)
+            processors[cam_id] = processor
+            processor_errors.pop(cam_id, None)
+    except Exception as e:
+        with processors_lock:
+            processor_errors[cam_id] = str(e)
+        print(f"Processor initialization failed for cam {cam_id}: {e}")
+    finally:
+        with processors_lock:
+            processors_initializing.discard(cam_id)
+
+
+def _ensure_processor_initializing(cam_id):
+    """Start asynchronous initialization once. Returns current processor (if already ready)."""
+    with processors_lock:
+        existing = processors.get(cam_id)
+        if existing is not None:
+            return existing
+        if cam_id in processors_initializing:
+            return None
+        processors_initializing.add(cam_id)
+        processor_errors.pop(cam_id, None)
+
+    threading.Thread(target=_init_processor, args=(cam_id,), daemon=True).start()
+    return None
+
+
+def get_processor(cam_id, wait=False, wait_timeout=40.0):
+    """Return processor; optionally wait for async initialization (used by video feed)."""
+    processor = _ensure_processor_initializing(cam_id)
+    if processor is not None or not wait:
+        return processor
+
+    deadline = time.time() + wait_timeout
+    while time.time() < deadline:
+        with processors_lock:
+            ready = processors.get(cam_id)
+            still_initializing = cam_id in processors_initializing
+        if ready is not None:
+            return ready
+        if not still_initializing:
+            break
+        time.sleep(0.05)
+    return None
 
 
 
@@ -806,9 +854,13 @@ def admin():
 @login_required
 def video_feed(cam_id):
     """Stream video frames."""
-    processor = get_processor(cam_id)
+    processor = get_processor(cam_id, wait=True, wait_timeout=45.0)
     if processor is None:
-        return Response(status=404)
+        with processors_lock:
+            error_message = processor_errors.get(cam_id)
+        if error_message:
+            return Response(f"Unable to initialize video stream: {error_message}", status=500)
+        return Response("Video stream is initializing. Please retry.", status=503)
     return Response(processor.generate_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
@@ -842,12 +894,16 @@ def upload_video():
         conn.close()
         
         # Pre-initialize processor for new video
-        processors[cam_id] = VideoProcessor(
+        preloaded_processor = VideoProcessor(
             str(upload_path),
             model_path=app.config['MODEL_PATH'],
             on_alert_callback=fire_alert_callback,
             camera_name=video_name
         )
+        with processors_lock:
+            processors[cam_id] = preloaded_processor
+            processors_initializing.discard(cam_id)
+            processor_errors.pop(cam_id, None)
         
         return {"ok": True}, 200
     return {"ok": False}, 400
@@ -889,10 +945,15 @@ def delete_camera(cam_id):
             file_path = Path(cam['path'])
 
             # Stop processor — signals the stream generator to exit and releases self.cap
-            if cam_id in processors:
+            with processors_lock:
+                processor = processors.get(cam_id)
+                processors_initializing.discard(cam_id)
+                processor_errors.pop(cam_id, None)
+            if processor is not None:
                 try:
-                    processors[cam_id].stop()
-                    del processors[cam_id]
+                    processor.stop()
+                    with processors_lock:
+                        processors.pop(cam_id, None)
                 except Exception as e:
                     print(f"Error stopping processor: {e}")
 
@@ -927,10 +988,24 @@ def get_cameras():
 @login_required
 def get_stats(cam_id):
     """Return current inference statistics."""
-    processor = get_processor(cam_id)
+    processor = get_processor(cam_id, wait=False)
     if processor is None:
-        return {"metrics": None, "logs": [], "growth_history": []}
-    return processor.get_stats()
+        with processors_lock:
+            is_initializing = cam_id in processors_initializing
+            error_message = processor_errors.get(cam_id)
+        return {
+            "status": "initializing" if is_initializing else ("error" if error_message else "idle"),
+            "error": error_message,
+            "metrics": None,
+            "logs": [],
+            "growth_history": [],
+            "temporal_status": None
+        }
+
+    stats = processor.get_stats()
+    stats["status"] = "ready"
+    stats["error"] = None
+    return stats
 
 
 if __name__ == '__main__':

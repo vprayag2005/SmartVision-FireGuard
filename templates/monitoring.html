@@ -1008,17 +1008,29 @@
       }
 
       let statsPollingActive = true;
-      function updateStats() {
+      let statsRequestInFlight = false;
+      let activeStatsController = null;
+      let cameraConfigIntervalId = null;
+
+      function queueNextStatsPoll(delayMs) {
+        statsRequestInFlight = false;
         if (!statsPollingActive) return;
+        setTimeout(updateStats, delayMs);
+      }
+
+      function updateStats() {
+        if (!statsPollingActive || statsRequestInFlight) return;
 
         const activeCamId = selector ? selector.value.replace('cam', '') : null;
         if (!activeCamId) {
-          setTimeout(updateStats, 1000);
+          queueNextStatsPoll(1000);
           return;
         }
 
+        statsRequestInFlight = true;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s — model load can take up to 20s on Azure B1
+        activeStatsController = controller;
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
 
         const fetchUrl = '/api/stats/' + activeCamId + '?_t=' + Date.now();
         fetch(fetchUrl, {
@@ -1035,15 +1047,29 @@
             return response.json();
           })
           .then(data => {
-            // Mark AI as live on first successful response
             const statusEl = document.getElementById('ai-status');
-            if (statusEl) {
-              statusEl.textContent = '● Live';
-              statusEl.className = 'text-xs font-mono text-green-400';
-            }
-            if (!data) {
-              setTimeout(updateStats, 1000);
+            if (!data || data.status === 'initializing') {
+              if (statusEl) {
+                statusEl.textContent = 'AI warming up...';
+                statusEl.className = 'text-xs font-mono text-yellow-400 animate-pulse';
+              }
+              queueNextStatsPoll(1000);
               return;
+            }
+            if (data.status === 'error') {
+              if (statusEl) {
+                statusEl.textContent = 'AI unavailable';
+                statusEl.className = 'text-xs font-mono text-red-400';
+              }
+              if (data.error) {
+                console.error('Stats unavailable:', data.error);
+              }
+              queueNextStatsPoll(2000);
+              return;
+            }
+            if (statusEl) {
+              statusEl.textContent = 'Live';
+              statusEl.className = 'text-xs font-mono text-green-400';
             }
 
             // Update Debug Overlay
@@ -1112,18 +1138,25 @@
               fireAlarm.play().catch(() => { });
             }
 
-            // Queue next poll
-            setTimeout(updateStats, 1000);
+            queueNextStatsPoll(1000);
           })
           .catch(err => {
-            console.error('Error fetching stats:', err);
+            clearTimeout(timeoutId);
+            const isAbort = err && err.name === 'AbortError';
+            if (isAbort) {
+              console.warn('Stats request timed out after 12s');
+            } else {
+              console.error('Error fetching stats:', err && err.message ? err.message : err);
+            }
             const statusEl = document.getElementById('ai-status');
-            if (statusEl && statusEl.textContent !== '● Live') {
-              statusEl.textContent = '⟳ AI warming up…';
+            if (statusEl && statusEl.textContent !== 'Live') {
+              statusEl.textContent = 'AI warming up...';
               statusEl.className = 'text-xs font-mono text-yellow-400 animate-pulse';
             }
-            // Queue next poll even on error
-            setTimeout(updateStats, 2000);
+            queueNextStatsPoll(isAbort ? 1000 : 2000);
+          })
+          .finally(() => {
+            activeStatsController = null;
           });
       }
 
@@ -1146,9 +1179,22 @@
           .catch(err => console.error('Error checking cameras:', err));
       }
 
-      setInterval(checkCameraConfig, 3000);
+      cameraConfigIntervalId = setInterval(checkCameraConfig, 3000);
+
+      window.addEventListener('pagehide', () => {
+        statsPollingActive = false;
+        if (activeStatsController) {
+          activeStatsController.abort();
+          activeStatsController = null;
+        }
+        if (cameraConfigIntervalId) {
+          clearInterval(cameraConfigIntervalId);
+          cameraConfigIntervalId = null;
+        }
+      });
     })();
   </script>
 </body>
 
 </html>
+
