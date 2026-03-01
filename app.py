@@ -1,4 +1,5 @@
 import os
+import shutil
 import time
 import sqlite3
 import threading
@@ -44,13 +45,58 @@ app.config['MODEL_PATH'] = Path(app.root_path) / 'models' / 'best.pt'
 def resolve_data_dir() -> Path:
     """Resolve the persistent data directory based on environment."""
     if os.name != 'nt':
+        # Azure App Service persistent storage is mounted under /home.
+        candidates = [Path('/home/site/data')]
         home = os.environ.get('HOME')
         if home:
-            # Azure App Service persistent storage mount
-            return Path(home) / 'site' / 'data'
+            candidates.append(Path(home) / 'site' / 'data')
+        for candidate in candidates:
+            try:
+                candidate.mkdir(parents=True, exist_ok=True)
+                return candidate
+            except OSError:
+                continue
     # Fallback to local .data directory for development
-    local_data = Path(app.root_path) / '.data'
-    return local_data
+    return Path(app.root_path) / '.data'
+
+
+def migrate_legacy_data(target_dir: Path) -> None:
+    """One-time migration from old ephemeral root path to persistent Azure path."""
+    if os.name == 'nt':
+        return
+    target_db = target_dir / 'database.db'
+    if target_db.exists():
+        return
+
+    legacy_candidates = [Path('/root/site/data')]
+    home = os.environ.get('HOME')
+    if home:
+        legacy_candidates.append(Path(home) / 'site' / 'data')
+
+    seen = set()
+    for legacy_dir in legacy_candidates:
+        legacy_str = str(legacy_dir)
+        if legacy_str in seen:
+            continue
+        seen.add(legacy_str)
+
+        if legacy_dir == target_dir:
+            continue
+        legacy_db = legacy_dir / 'database.db'
+        if not legacy_db.exists():
+            continue
+
+        try:
+            print(f"Migrating data directory from {legacy_dir} to {target_dir}")
+            shutil.copy2(legacy_db, target_db)
+            legacy_uploads = legacy_dir / 'uploads'
+            target_uploads = target_dir / 'uploads'
+            if legacy_uploads.exists():
+                shutil.copytree(legacy_uploads, target_uploads, dirs_exist_ok=True)
+            print("Legacy data migration completed")
+            return
+        except Exception as e:
+            print(f"Legacy data migration failed from {legacy_dir}: {e}")
 
 DATA_DIR = resolve_data_dir()
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -58,6 +104,7 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / 'database.db'
 UPLOADS_DIR = DATA_DIR / 'uploads'
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+migrate_legacy_data(DATA_DIR)
 
 print(f"Using persistent data directory: {DATA_DIR}")
 print(f"Database path: {DB_PATH}")
@@ -764,55 +811,6 @@ def terms():
     """Render the terms of service page."""
     return render_template('terms.html')
 
-def init_db():
-    conn = get_db_connection()
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS cameras (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            type TEXT NOT NULL,
-            location TEXT NOT NULL,
-            path TEXT NOT NULL
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            role TEXT NOT NULL,
-            is_verified BOOLEAN NOT NULL DEFAULT 0
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS otps (
-            email TEXT PRIMARY KEY,
-            otp TEXT NOT NULL,
-            password_hash TEXT NOT NULL,
-            role TEXT NOT NULL,
-            expires_at REAL NOT NULL
-        )
-    ''')
-    
-    # Create default Admin if no users exist
-    c.execute('SELECT COUNT(*) FROM users')
-    if c.fetchone()[0] == 0:
-        admin_email = os.environ.get('ADMIN_EMAIL')
-        admin_password = os.environ.get('ADMIN_PASSWORD')
-        
-        if admin_email and admin_password:
-            admin_pass_hash = hash_password(admin_password)
-            c.execute('INSERT INTO users (email, password_hash, role, is_verified) VALUES (?, ?, ?, ?)',
-                      (admin_email, admin_pass_hash, 'Admin', True))
-            print(f"Created default admin: {admin_email}")
-        else:
-            print("WARNING: No users found and ADMIN_EMAIL/ADMIN_PASSWORD not set. Admin account NOT created.")
-
-    
-    conn.commit()
-    conn.close()
-
 # User class for Flask-Login
 class User(UserMixin):
     def __init__(self, id, email, role, is_verified):
@@ -832,9 +830,6 @@ def load_user(user_id):
     if user_row:
         return User(user_row['id'], user_row['email'], user_row['role'], user_row['is_verified'])
     return None
-
-# Initialize DB on startup
-init_db()
 
 @app.route('/admin')
 @login_required
