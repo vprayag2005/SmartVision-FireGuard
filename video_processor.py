@@ -58,6 +58,8 @@ class VideoProcessor:
     TEMPORAL_WINDOW = 30
     FIRE_TRIGGER_SECONDS = 10
     CONF_DETECTION_MIN = 0.10
+    LOG_EMIT_SECONDS = 60.0
+    GROWTH_SAMPLE_SECONDS = 30.0
     
     # Shared class-level YOLO model (Singleton pattern) to save RAM
     _shared_model = None
@@ -92,6 +94,7 @@ class VideoProcessor:
             'model': 'v9 edge'
         }
         self.last_log_time = 0.0
+        self.last_growth_sample_time = 0.0
         self.area_history: deque = deque(maxlen=120)
 
         self.detection_window: deque = deque(maxlen=self.TEMPORAL_WINDOW)
@@ -447,8 +450,10 @@ class VideoProcessor:
 
     def _update_logs(self) -> None:
         current_time = time.time()
+        should_sample_growth = (current_time - self.last_growth_sample_time) >= self.GROWTH_SAMPLE_SECONDS
+        should_emit_log = (current_time - self.last_log_time) >= self.LOG_EMIT_SECONDS
 
-        if (current_time - self.last_log_time) > 29.9:
+        if should_sample_growth or should_emit_log:
             ts_ms = self._now_ms()
             timestamp = datetime.datetime.fromtimestamp(ts_ms / 1000).strftime("%H:%M:%S")
 
@@ -458,25 +463,27 @@ class VideoProcessor:
                 fire_area = self.inference_stats['fire_area']
                 smoke_area = self.inference_stats['smoke_area']
 
-                self.area_history.append({
-                    'ts': ts_ms,
-                    'time': timestamp,
-                    'fire_area': fire_area,
-                    'smoke_area': smoke_area
-                })
+                if should_sample_growth:
+                    self.area_history.append({
+                        'ts': ts_ms,
+                        'time': timestamp,
+                        'fire_area': fire_area,
+                        'smoke_area': smoke_area
+                    })
+                    self.last_growth_sample_time = current_time
 
-                has_detection = fire > 10.0 or smoke > 10.0
-                log_type = "alert" if has_detection else "normal"
-                msg = f"Inference • Fire: {fire:.1f}% • Smoke: {smoke:.1f}%"
+                if should_emit_log:
+                    has_detection = fire > 10.0 or smoke > 10.0
+                    log_type = "alert" if has_detection else "normal"
+                    msg = f"Inference - Fire: {fire:.1f}% - Smoke: {smoke:.1f}%"
 
-                self.logs.appendleft({
-                    'ts': ts_ms,
-                    'time': timestamp,
-                    'msg': msg,
-                    'type': log_type
-                })
-                
-            self.last_log_time = current_time
+                    self.logs.appendleft({
+                        'ts': ts_ms,
+                        'time': timestamp,
+                        'msg': msg,
+                        'type': log_type
+                    })
+                    self.last_log_time = current_time
 
     def get_stats(self) -> Dict[str, Any]:
         self.last_access_time = time.time() # Keeps it alive
