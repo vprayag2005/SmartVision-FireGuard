@@ -57,7 +57,7 @@ def merge_boxes(boxes: List[List[float]]) -> List[List[float]]:
 class VideoProcessor:
     TEMPORAL_WINDOW = 30
     FIRE_TRIGGER_SECONDS = 10
-    CONF_DETECTION_MIN = 0.10
+    CONF_DETECTION_MIN = 0.25
     LOG_EMIT_SECONDS = 60.0
     GROWTH_SAMPLE_SECONDS = 30.0
     
@@ -300,8 +300,11 @@ class VideoProcessor:
             # Weights: 50% Persistence, 30% Confidence Stability, 20% Growth
             w1, w2, w3 = 0.50, 0.30, 0.20
             
-            trs_raw = (w1 * p_score) + (w2 * c_score) + (w3 * g_score)
-            trs_final = max(0.0, min(100.0, trs_raw)) # Bound between 0 and 100
+            if fire_persistence == 0 and smoke_persistence == 0:
+                trs_final = 0.0
+            else:
+                trs_raw = (w1 * p_score) + (w2 * c_score) + (w3 * g_score)
+                trs_final = max(0.0, min(100.0, trs_raw))
 
             # Detect state transitions for alert callbacks
             prev_confirmed = self._prev_fire_confirmed
